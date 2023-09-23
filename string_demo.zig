@@ -46,18 +46,29 @@ test "strings" {
     // TODO: Why must this be var and not const?
     var colors = try String.init_with_contents(allocator, "red,green,blue");
     defer colors.deinit();
-    // Splits into []u8 slices.
+    // Splits into []u8 slices.  This works.
     if (colors.split(",", 0)) |c1| {
         assert(std.mem.eql(u8, c1, "red"));
         if (colors.split(",", 4)) |c2| {
             assert(std.mem.eql(u8, c2, "green"));
         }
     }
-    // Splits into String slices.
-    // if (colors.splitToString(",", 0)) |c1| {
+
+    // Splits into String slices.  This does not work!
+    // var color1 = try colors.splitToString(",", 0);
+    // if (color1) |c1| {
+    //     defer c1.deinit();
     //     assert(c1.cmp("red"));
-    //     if (colors.split(",", 4)) |c2| {
+    //     const color2 = try colors.splitToString(",", 4);
+    //     if (color2) |c2| {
+    //         defer c2.deinit();
     //         assert(c2.cmp("green"));
     //     }
     // }
+
+    const colorsArray = "red,green,blue";
+    var splits = std.mem.split(u8, colorsArray, ",");
+    while (splits.next()) |chunk| {
+        print("chunk = {s}\n", .{chunk});
+    }
 }
