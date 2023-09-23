@@ -1,3 +1,6 @@
+// This demonstrates using the zig-string library
+// at https://github.com/JakubSzark/zig-string.
+// You can just copy the file zig-string.zig.
 const std = @import("std");
 const assert = std.debug.assert;
 const print = std.debug.print;
@@ -54,6 +57,11 @@ test "strings" {
         }
     }
 
+    var padded = try String.init_with_contents(allocator, "  foo ");
+    padded.trim(); // trims in place
+    // Also see trimStart and trimEnd.
+    assert(padded.cmp("foo"));
+
     // Splits into String slices.  This does not work!
     // var color1 = try colors.splitToString(",", 0);
     // if (color1) |c1| {
@@ -66,6 +74,7 @@ test "strings" {
     //     }
     // }
 
+    // This demonstrates splitting a []u8 instead of a zig-string String.
     const colorsArray = "red,green,blue";
     var splits = std.mem.split(u8, colorsArray, ",");
     while (splits.next()) |chunk| {
