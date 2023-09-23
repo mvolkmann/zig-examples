@@ -28,14 +28,14 @@ test "strings" {
     myString.toLowercase(); // modifies in place
     assert(myString.cmp("abcde"));
 
-    assert(!myString.isEmpty());
-    // myString.clear();
-    // assert(myString.isEmpty());
-
     var copy = try myString.clone();
     defer copy.deinit();
     copy.reverse(); // modifies in place
     assert(copy.cmp("edcba"));
+
+    assert(!myString.isEmpty());
+    myString.clear();
+    assert(myString.isEmpty());
 
     var santa = try String.init_with_contents(allocator, "Ho");
     defer santa.deinit();
