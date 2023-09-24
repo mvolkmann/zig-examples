@@ -20,24 +20,15 @@ const Dog = struct {
     }
 };
 
-// This sets the default logging level.
 pub const std_options = struct {
-    // Set this to .info, .debug, .warn, or .err.
+    // This sets the default logging level.
+    // Set to .info, .debug, .warn, or .err.
     pub const log_level = .warn;
-};
 
-// This sets the logging leve for each app-specific scope.
-// THIS IS NOT WORKING!
-pub const scope_levels = [_]std.log.ScopeLevel{
-    .{ .scope = .default, .level = .warn },
-    .{ .scope = .my_project, .level = .err },
-};
-
-// THIS IS NOT WORKING!
-pub const options_override = struct {
-    const log_scope_levels = [_]std.log.ScopeLevel{
-        .{ .scope = .default, .level = .warn },
-        .{ .scope = .my_project, .level = .err },
+    // This sets scope-specific logging levels.
+    pub const log_scope_levels = &[_]std.log.ScopeLevel{
+        // Can have one line like this for each scope.
+        .{ .scope = .my_library, .level = .info },
     };
 };
 
@@ -46,12 +37,16 @@ pub fn main() !void {
     print("{}\n", .{dog});
 
     // Use this instead of std.log to scope the log messages.
-    // This could be used to filter log output to a specific part of an application.
-    const log = std.log.scoped(.my_project);
+    // This can be used to filter log output to a specific part of an application.
+    const log = std.log.scoped(.my_library);
 
     // Does std.options.log_scope_levels specify which logging levels are enabled?
     log.info("{} + {} = {}", .{ 1, 2, 1 + 2 });
     log.debug("{} + {} = {}", .{ 1, 2, 1 + 2 });
     log.warn("{} + {} = {}", .{ 1, 2, 1 + 2 });
     log.err("{} + {} = {}", .{ 1, 2, 1 + 2 });
+
+    const stdout = std.io.getStdOut();
+    const sow = stdout.writer();
+    try sow.print("Hello, {s}!\n", .{"world"});
 }
