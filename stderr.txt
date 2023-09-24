@@ -1,0 +1,9 @@
+Comet is a 3 year old whippet.
+debug: 1 + 2 = 3
+
+info: 1 + 2 = 3
+
+error: 1 + 2 = 3
+
+warning: 1 + 2 = 3
+

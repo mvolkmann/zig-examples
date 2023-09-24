@@ -22,8 +22,8 @@ fn square(n: f32) f32 {
 }
 
 const Point = struct {
-    x: f32,
-    y: f32,
+    x: f32 = 1,
+    y: f32 = 2,
 
     pub fn distanceToOrigin(self: Point) f32 {
         return sqrt(square(self.x) + square(self.y));
@@ -37,6 +37,12 @@ const Point = struct {
 };
 
 test "Point struct" {
+    const p0 = Point{};
+    print("p0 = {}\n", .{p0});
+
+    const py = Point{ .y = 19 };
+    print("py = {}\n", .{py});
+
     const p1 = Point{ .x = 3, .y = 4 };
     try expect(p1.distanceToOrigin() == 5);
 
