@@ -2,6 +2,7 @@ const std = @import("std");
 const print = std.debug.print;
 const sqrt = std.math.sqrt;
 const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 
 // TODO: Is there an efficiency gain from this
 // TODO: more complex way to get the square function?
@@ -58,4 +59,28 @@ test "Point struct" {
         print("found field {s} with type {s}\n", .{ field.name, @typeName(field.type) });
         print("value in p1 is {}\n", .{@as(field.type, @field(p1, field.name))});
     }
+}
+
+test "anonymous struct" {
+    const not_used = 5;
+    _ = not_used;
+
+    const instance = .{
+        .key1 = true, // type is bool
+        .key2 = 19, // type is comptime_int
+        .key3 = 'x', // type is comptime_int (value is 120)
+        .key4 = "text", // type is *const [4:0]u8; 0 is the alignment
+    };
+
+    try expectEqual(bool, @TypeOf(instance.key1));
+    try expectEqual(true, instance.key1);
+
+    try expectEqual(comptime_int, @TypeOf(instance.key2));
+    try expectEqual(19, instance.key2);
+
+    try expectEqual(comptime_int, @TypeOf(instance.key3));
+    try expectEqual('x', instance.key3);
+
+    try expectEqual(*const [4:0]u8, @TypeOf(instance.key4));
+    try expectEqual("text", instance.key4);
 }
