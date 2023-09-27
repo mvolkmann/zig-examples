@@ -1,5 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
+const stdout = std.io.getStdOut();
+const sow = stdout.writer();
 
 fn makeNode(comptime T: type) type {
     return struct {
@@ -17,21 +19,26 @@ fn makeNode(comptime T: type) type {
             };
         }
 
-        pub fn depthFirstPrint(self: *Self) void {
+        pub fn depthFirstPrint(self: *Self, indent: u8) !void {
             const specifier = if (T == []const u8) "s" else "";
-            const format = "{" ++ specifier ++ "}\n";
-            std.debug.print(format, .{self.value});
+            for (0..indent) |_| {
+                try sow.print("  ", .{});
+            }
+            // format must be comptime!
+            const format = "- {" ++ specifier ++ "}\n";
+            try sow.print(format, .{self.value});
+
             if (self.left) |left| {
-                left.depthFirstPrint();
+                try left.depthFirstPrint(indent + 1);
             }
             if (self.right) |right| {
-                right.depthFirstPrint();
+                try right.depthFirstPrint(indent + 1);
             }
         }
     };
 }
 
-fn treeOfStrings() void {
+fn treeOfStrings() !void {
     const Node = makeNode([]const u8);
     var node1 = Node.init("one");
     var node2 = Node.init("two");
@@ -40,10 +47,10 @@ fn treeOfStrings() void {
     node1.right = &node3;
     var node4 = Node.init("four");
     node2.left = &node4;
-    node1.depthFirstPrint();
+    try node1.depthFirstPrint(0);
 }
 
-fn treeOfU8() void {
+fn treeOfU8() !void {
     const Node = makeNode(u8);
     var node1 = Node.init(1);
     var node2 = Node.init(2);
@@ -52,10 +59,12 @@ fn treeOfU8() void {
     node1.right = &node3;
     var node4 = Node.init(4);
     node2.left = &node4;
-    node1.depthFirstPrint();
+    try node1.depthFirstPrint(0);
 }
 
+// TODO: Create a tree where values are a custom struct type.
+
 pub fn main() !void {
-    treeOfU8();
-    treeOfStrings();
+    try treeOfU8();
+    try treeOfStrings();
 }
