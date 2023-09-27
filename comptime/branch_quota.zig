@@ -17,6 +17,12 @@ fn sum(numbers: []const u32) u32 {
 const size = 1000;
 const scores: [size]u32 = .{1} ** size;
 
+// TODO: Try to initialize like this:
+// var scores: [1000]u32 = undefined;
+// for (&scores, 0..) |*item, index| {
+//   item.* = index % 10;
+// }
+
 // This is executed at compile-time.
 const total = sum(&scores);
 
