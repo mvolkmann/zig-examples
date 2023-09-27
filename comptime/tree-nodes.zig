@@ -38,24 +38,23 @@ fn makeNode(comptime T: type) type {
             };
         }
 
-        pub fn depthFirstPrint(self: *Self, indent: u8) !void {
-            try sow.writeByteNTimes(' ', indent * 2);
+        pub fn depthFirstPrint(self: *Self, indent: u8) void {
+            // Ignoring errors for simplicity.
+            sow.writeByteNTimes(' ', indent * 2) catch {};
+
             // format must be compile-time known.
             const specifier = if (T == []const u8) "s" else "";
             const format = "- {" ++ specifier ++ "}\n";
-            try sow.print(format, .{self.value});
+            // Ignoring errors for simplicity.
+            sow.print(format, .{self.value}) catch {};
 
-            if (self.left) |left| {
-                try left.depthFirstPrint(indent + 1);
-            }
-            if (self.right) |right| {
-                try right.depthFirstPrint(indent + 1);
-            }
+            if (self.left) |left| left.depthFirstPrint(indent + 1);
+            if (self.right) |right| right.depthFirstPrint(indent + 1);
         }
     };
 }
 
-fn treeOfDogs() !void {
+fn treeOfDogs() void {
     const Node = makeNode(Dog);
     var node1 = Node.init(Dog{
         .name = "Maisey",
@@ -80,10 +79,10 @@ fn treeOfDogs() !void {
         .age = 3,
     });
     node2.left = &node4;
-    try node1.depthFirstPrint(0);
+    node1.depthFirstPrint(0);
 }
 
-fn treeOfStrings() !void {
+fn treeOfStrings() void {
     const Node = makeNode([]const u8);
     var node1 = Node.init("one");
     var node2 = Node.init("two");
@@ -92,10 +91,10 @@ fn treeOfStrings() !void {
     node1.right = &node3;
     var node4 = Node.init("four");
     node2.left = &node4;
-    try node1.depthFirstPrint(0);
+    node1.depthFirstPrint(0);
 }
 
-fn treeOfU8() !void {
+fn treeOfU8() void {
     const Node = makeNode(u8);
     var node1 = Node.init(1);
     var node2 = Node.init(2);
@@ -104,13 +103,13 @@ fn treeOfU8() !void {
     node1.right = &node3;
     var node4 = Node.init(4);
     node2.left = &node4;
-    try node1.depthFirstPrint(0);
+    node1.depthFirstPrint(0);
 }
 
 // TODO: Create a tree where values are a custom struct type.
 
 pub fn main() !void {
-    try treeOfU8();
-    try treeOfStrings();
-    try treeOfDogs();
+    treeOfU8();
+    treeOfStrings();
+    treeOfDogs();
 }
