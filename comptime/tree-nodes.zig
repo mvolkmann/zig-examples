@@ -3,6 +3,25 @@ const print = std.debug.print;
 const stdout = std.io.getStdOut();
 const sow = stdout.writer();
 
+const Dog = struct {
+    name: []const u8,
+    breed: []const u8,
+    age: u8,
+
+    const Self = @This();
+    pub fn format(
+        value: Self,
+        comptime _: []const u8,
+        _: std.fmt.FormatOptions,
+        writer: anytype,
+    ) std.os.WriteError!void {
+        return writer.print(
+            "{s} is a {d} year old {s}.",
+            .{ value.name, value.age, value.breed },
+        );
+    }
+};
+
 fn makeNode(comptime T: type) type {
     return struct {
         const Self = @This();
@@ -20,11 +39,9 @@ fn makeNode(comptime T: type) type {
         }
 
         pub fn depthFirstPrint(self: *Self, indent: u8) !void {
+            try sow.writeByteNTimes(' ', indent * 2);
+            // format must be compile-time known.
             const specifier = if (T == []const u8) "s" else "";
-            for (0..indent) |_| {
-                try sow.print("  ", .{});
-            }
-            // format must be comptime!
             const format = "- {" ++ specifier ++ "}\n";
             try sow.print(format, .{self.value});
 
@@ -36,6 +53,34 @@ fn makeNode(comptime T: type) type {
             }
         }
     };
+}
+
+fn treeOfDogs() !void {
+    const Node = makeNode(Dog);
+    var node1 = Node.init(Dog{
+        .name = "Maisey",
+        .breed = "Treeing Walker Coonhound",
+        .age = 3,
+    });
+    var node2 = Node.init(Dog{
+        .name = "Ramsay",
+        .breed = "Native American Indian Dog",
+        .age = 3,
+    });
+    node1.left = &node2;
+    var node3 = Node.init(Dog{
+        .name = "Oscar",
+        .breed = "German Short-haired Pointer",
+        .age = 3,
+    });
+    node1.right = &node3;
+    var node4 = Node.init(Dog{
+        .name = "Comet",
+        .breed = "Whippet",
+        .age = 3,
+    });
+    node2.left = &node4;
+    try node1.depthFirstPrint(0);
 }
 
 fn treeOfStrings() !void {
@@ -67,4 +112,5 @@ fn treeOfU8() !void {
 pub fn main() !void {
     try treeOfU8();
     try treeOfStrings();
+    try treeOfDogs();
 }
