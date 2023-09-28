@@ -11,14 +11,13 @@ test "ArrayList" {
     var list = std.ArrayList(String).init(allocator);
     defer list.deinit();
 
-    // ArrayList fields are items, capacity, and allocator.
     // ArrasyList methods are append, appendSlice, clone, deinit,
     // getLast, getLastOrNull, init, insert, insertSlice, orderedRemove,
     // pop, popOrNull, replaceRange, writer, and many more.
 
     try list.append("red");
-    try list.append("green");
-    try list.append("blue");
+    const colors = [_]String{ "green", "blue" };
+    try list.appendSlice(&colors);
     try expect(list.items.len == 3);
     try expectEqual(@as(?String, "blue"), list.getLastOrNull());
 
