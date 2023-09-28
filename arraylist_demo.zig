@@ -16,8 +16,7 @@ test "ArrayList" {
     // pop, popOrNull, replaceRange, writer, and many more.
 
     try list.append("red");
-    const colors = [_]String{ "green", "blue" };
-    try list.appendSlice(&colors);
+    try list.appendSlice(&[_]String{ "green", "blue" });
     try expect(list.items.len == 3);
     try expectEqual(@as(?String, "blue"), list.getLastOrNull());
 
