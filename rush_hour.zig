@@ -87,7 +87,8 @@ const pendingStates = []State{};
 
 // This holds state ids that have already been evaluated.
 // It is used to avoid evaluating a board state multiple times.
-const visitedIds = new Set();
+const visitedIds = std.BufSet.init(allocator);
+defer visitedIds.deinit();
 
 fn addHorizontalMoves({
   state,
@@ -458,8 +459,8 @@ fn solve(cars) {
 
     // Ensure that we won't evaluate this same state again.
     const id = getStateId(cars);
-    if (!visitedIds.has(id)) {
-      visitedIds.add(id);
+    if (!visitedIds.contains(id)) {
+      visitedIds.insert(id);
 
       // Find all moves that can be made in the current state and
       // save them in pendingStates for possible evaluation later.
