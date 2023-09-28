@@ -1,10 +1,10 @@
 const std = @import("std");
 const print = std.debug.print;
+const allocator = std.testing.allocator;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 
 test "HashMap" {
-    const allocator = std.testing.allocator;
     var map = std.StringHashMap(u8).init(allocator);
     defer map.deinit();
 
