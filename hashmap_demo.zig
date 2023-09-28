@@ -31,20 +31,23 @@ test "HashMap" {
     try map.put("Ratelle", 19);
     try expect(map.count() == 3);
 
-    try expect(map.contains("Gretzky"));
-
-    // The `get` method returns an optional value.
-    try expectEqual(@as(?u8, 99), map.get("Gretzky"));
-
+    // Iterate over the map entries.
+    print("\n", .{});
     var iter = map.iterator();
     while (iter.next()) |entry| {
         print("{s} number is {d}.\n", .{ entry.key_ptr.*, entry.value_ptr.* });
     }
 
+    // Iterate over the map keys.
     var iter2 = map.keyIterator();
     while (iter2.next()) |key| {
         print("{s} number is {any}.\n", .{ key.*, map.get(key.*) });
     }
+
+    try expect(map.contains("Gretzky"));
+
+    // The `get` method returns an optional value.
+    try expectEqual(@as(?u8, 99), map.get("Gretzky"));
 
     const removed = map.remove("Gretzky");
     try expect(removed);
