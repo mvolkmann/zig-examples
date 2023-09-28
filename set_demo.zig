@@ -31,6 +31,15 @@ test "EnumSet" {
     // This does not use an allocator and does not have a `deinit` method.
     var set = std.EnumSet(Color).initEmpty();
 
+    // To begin with all enum values in the set ...
+    // var set = std.EnumSet(Color).initFull();
+
+    // To begin with a subset of the enum values in the set ...
+    // var set = std.EnumSet(Color).initMany(&[_]Color{ .orange, .yellow });
+
+    // To begin with one of the enum values in the set ...
+    // var set = std.EnumSet(Color).initOne(.orange);
+
     set.insert(.orange);
     set.insert(.yellow);
     set.insert(.black);
@@ -47,4 +56,6 @@ test "EnumSet" {
 
     set.remove(.yellow);
     try expect(!set.contains(.yellow));
+
+    // There are many more methods on `EnumSet` instances.
 }
