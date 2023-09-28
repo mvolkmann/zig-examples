@@ -11,14 +11,9 @@ test "ArrayList" {
     var list = std.ArrayList(String).init(allocator);
     defer list.deinit();
 
-    // ArrasyList methods are append, appendSlice, clone, deinit,
-    // getLast, getLastOrNull, init, insert, insertSlice, orderedRemove,
-    // pop, popOrNull, replaceRange, writer, and many more.
-
     try list.append("red");
     try list.appendSlice(&[_]String{ "green", "blue" });
     try expect(list.items.len == 3);
-    try expectEqual(@as(?String, "blue"), list.getLastOrNull());
 
     // Iterate over the list entries.
     print("\n", .{});
@@ -26,18 +21,25 @@ test "ArrayList" {
         print("{s}\n", .{value});
     }
 
-    try expectEqual(@as(?String, "blue"), list.pop());
+    // There is no method to test if an ArrayList` contains a given value.
+    // It's more efficient to use a `BufSet` when that is needed.
+
+    try expectEqual(@as(?String, "blue"), list.getLastOrNull());
+
+    try expectEqual(@as(?String, "blue"), list.popOrNull());
     try expect(list.items.len == 2);
 
-    // try expect(list.contains("green"));
+    try list.insert(1, "pink");
+    try expect(list.items.len == 3);
+    // Also see the replaceRange method.
 
-    // const removed = list.remove("green");
-    // try expect(removed);
-    // try expect(!list.contains("green"));
+    const removed = list.orderedRemove(1);
+    try expectEqual(@as(String, "pink"), removed);
+    try expect(list.items.len == 2);
 
-    try list.appendNTimes("clear", 2);
+    try list.appendNTimes("black", 2);
     try expect(list.items.len == 4); // length was 2
-    try expectEqual(@as(String, "clear"), list.getLast());
+    try expectEqual(@as(String, "black"), list.getLast());
 
     list.clearAndFree();
     try expect(list.items.len == 0);
