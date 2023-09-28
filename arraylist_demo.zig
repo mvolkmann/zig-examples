@@ -34,4 +34,11 @@ test "ArrayList" {
     // const removed = list.remove("green");
     // try expect(removed);
     // try expect(!list.contains("green"));
+
+    try list.appendNTimes("clear", 2);
+    try expect(list.items.len == 4); // length was 2
+    try expectEqual(@as(String, "clear"), list.getLast());
+
+    list.clearAndFree();
+    try expect(list.items.len == 0);
 }
