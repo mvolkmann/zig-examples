@@ -2,6 +2,7 @@ const std = @import("std");
 const print = std.debug.print;
 const allocator = std.heap.page_allocator;
 
+// TODO: Turn this into a test like hashmap_demo.zig and demonstrate more methods.
 pub fn main() !void {
     var list = std.ArrayList(i32).init(allocator);
     // ArrayList fields are items, capacity, and allocator.
