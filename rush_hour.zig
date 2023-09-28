@@ -20,11 +20,10 @@ const Car = struct {
   currentRow: u8,
   currentColumn: u8,
 };
-
 const String = []u8;
 const State = struct {
   move: String,
-  cars, // a HashMap where each key is a letter and each value is a Car
+  cars: StringHashMap, // keys are letters and values are Car structs
   board: Board,
   previousState
 };
@@ -81,12 +80,10 @@ const PUZZLES = .{
 // It is set in the solve function.
 var letters = String{};
 
-// This holds objects with the properties
-// "move", "cars", "board", and "previousState".
 // These objects describe states that still need to be evaluated
 // and will not necessarily be part of the solutions.
 // This is key to implementing a breadth-first search.
-const pendingStates = [];
+const pendingStates = []State{};
 
 // This holds state ids that have already been evaluated.
 // It is used to avoid evaluating a board state multiple times.
