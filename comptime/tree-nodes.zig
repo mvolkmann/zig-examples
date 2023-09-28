@@ -1,7 +1,67 @@
 const std = @import("std");
-const print = std.debug.print;
 const stdout = std.io.getStdOut();
 const sow = stdout.writer();
+
+fn makeNode(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        // left and right are optional pointers to
+        // another instance of this struct type.
+        left: ?*Self,
+        right: ?*Self,
+        value: T,
+
+        fn init(value: T) Self {
+            return Self{
+                .left = null,
+                .right = null,
+                .value = value,
+            };
+        }
+
+        pub fn depthFirstPrint(self: *Self, indent: u8) void {
+            // Ignoring errors for simplicity.
+            sow.writeByteNTimes(' ', indent * 2) catch {};
+
+            // The value of specifier will be known at compile-time.
+            const specifier = if (T == []const u8) "s" else "";
+            // The format argument to the print function
+            // must be known at compile-time.
+            const format = "- {" ++ specifier ++ "}\n";
+            // Ignoring errors for simplicity.
+            sow.print(format, .{self.value}) catch {};
+
+            // Recursively print the left and right nodes.
+            if (self.left) |left| left.depthFirstPrint(indent + 1);
+            if (self.right) |right| right.depthFirstPrint(indent + 1);
+        }
+    };
+}
+
+fn treeOfIntegers() void {
+    const Node = makeNode(u8);
+    var node1 = Node.init(1);
+    var node2 = Node.init(2);
+    node1.left = &node2;
+    var node3 = Node.init(3);
+    node1.right = &node3;
+    var node4 = Node.init(4);
+    node2.left = &node4;
+    node1.depthFirstPrint(0);
+}
+
+fn treeOfStrings() void {
+    const Node = makeNode([]const u8);
+    var node1 = Node.init("one");
+    var node2 = Node.init("two");
+    node1.left = &node2;
+    var node3 = Node.init("three");
+    node1.right = &node3;
+    var node4 = Node.init("four");
+    node2.left = &node4;
+    node1.depthFirstPrint(0);
+}
 
 const Dog = struct {
     name: []const u8,
@@ -21,38 +81,6 @@ const Dog = struct {
         );
     }
 };
-
-fn makeNode(comptime T: type) type {
-    return struct {
-        const Self = @This();
-
-        left: ?*Self,
-        right: ?*Self,
-        value: T,
-
-        fn init(value: T) Self {
-            return Self{
-                .left = null,
-                .right = null,
-                .value = value,
-            };
-        }
-
-        pub fn depthFirstPrint(self: *Self, indent: u8) void {
-            // Ignoring errors for simplicity.
-            sow.writeByteNTimes(' ', indent * 2) catch {};
-
-            // format must be compile-time known.
-            const specifier = if (T == []const u8) "s" else "";
-            const format = "- {" ++ specifier ++ "}\n";
-            // Ignoring errors for simplicity.
-            sow.print(format, .{self.value}) catch {};
-
-            if (self.left) |left| left.depthFirstPrint(indent + 1);
-            if (self.right) |right| right.depthFirstPrint(indent + 1);
-        }
-    };
-}
 
 fn treeOfDogs() void {
     const Node = makeNode(Dog);
@@ -82,34 +110,25 @@ fn treeOfDogs() void {
     node1.depthFirstPrint(0);
 }
 
-fn treeOfStrings() void {
-    const Node = makeNode([]const u8);
-    var node1 = Node.init("one");
-    var node2 = Node.init("two");
-    node1.left = &node2;
-    var node3 = Node.init("three");
-    node1.right = &node3;
-    var node4 = Node.init("four");
-    node2.left = &node4;
-    node1.depthFirstPrint(0);
-}
-
-fn treeOfU8() void {
-    const Node = makeNode(u8);
-    var node1 = Node.init(1);
-    var node2 = Node.init(2);
-    node1.left = &node2;
-    var node3 = Node.init(3);
-    node1.right = &node3;
-    var node4 = Node.init(4);
-    node2.left = &node4;
-    node1.depthFirstPrint(0);
-}
-
-// TODO: Create a tree where values are a custom struct type.
-
 pub fn main() !void {
-    treeOfU8();
+    treeOfIntegers();
+    // Output is
+    // - 1
+    //   - 2
+    //     - 4
+    //   - 3
+
     treeOfStrings();
+    // Output is
+    // - one
+    //   - two
+    //     - four
+    //   - three
+
     treeOfDogs();
+    // Output is
+    // - Maisey is a 3 year old Treeing Walker Coonhound.
+    //   - Ramsay is a 3 year old Native American Indian Dog.
+    //     - Comet is a 3 year old Whippet.
+    //   - Oscar is a 3 year old German Short-haired Pointer.
 }

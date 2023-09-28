@@ -13,6 +13,7 @@ pub fn main() void {
 
     // Struct reflection
     // This for loop must be inline.
+    // Is that because relatcion can only be used at compile-time?
     inline for (std.meta.fields(Dog)) |field| {
         const T = field.type;
         print("Dog struct has field \"{s}\" with type {s}\n", .{ field.name, @typeName(T) });
