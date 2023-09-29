@@ -5,6 +5,7 @@
 // use a heuristic function to select the next node to evaluate.
 
 const std = @import("std");
+const bufPrint = std.fmt.bufPrint;
 const stdout = std.io.getStdOut();
 const sow = stdout.writer();
 
@@ -87,26 +88,23 @@ const pendingStates = []State{};
 
 // This holds state ids that have already been evaluated.
 // It is used to avoid evaluating a board state multiple times.
-const visitedIds = std.BufSet.init(allocator);
+var visitedIds = std.BufSet.init(allocator);
 defer visitedIds.deinit();
 
-fn addHorizontalMoves({
-  state,
-  letter,
-  row,
-  startColumn,
-  endColumn,
-  delta,
-}) {
-  const { board, cars } = state;
-  const { currentColumn } = cars[letter];
-  const length = carLength(letter);
+fn addHorizontalMoves(state, letter, row, startColumn, endColumn, delta) void {
+  const board = state.board;
+  const cars = state.cars;
+  const currentColumn = cars[letter].currentColumn;
+  const length = carLength(args.letter);
 
-  var column = startColumn;
+  var column = args.startColumn;
   while (true) {
     // Make a copy of the cars objects where the car being moved is updated.
     const newCars = copyCars(cars);
-    newCars[letter] = { row, currentColumn: column };
+    newCars[letter] = .{
+      .row = state.row,
+      .currentColumn = column
+    };
 
     // Make a copy of the board where the car being moved is updated.
     const newBoard = copyBoard(board);
@@ -116,26 +114,34 @@ fn addHorizontalMoves({
     // Add car being moved in new location.
     setRow(newBoardRow, letter, column, length);
 
-    const direction = delta === -1 ? "right" : "left";
+    const direction = if (delta == -1) "right" else "left";
     const distance = Math.abs(column - currentColumn);
-    const move = `${letter} ${direction} ${distance}`;
-    addPendingState(newBoard, newCars, move, state);
+    var move = createMove(letter, direction, distance);
+    addPendingState(newBoard, newCars, move, args.state);
 
-    if (column === endColumn) break;
+    if (column == endColumn) break;
     column += delta;
   }
 }
 
-fn addVerticalMoves({ state, letter, column, startRow, endRow, delta }) {
-  const { board, cars } = state;
-  const { currentRow } = cars[letter];
+fn addVerticalMoves(
+  state,
+  letter,
+  column,
+  startRow,
+  endRow,
+  delta
+) void {
+  const board = state.board;
+  const cars = state.cars;
+  const currentRow = cars[letter].currentRow;
   const length = carLength(letter);
 
   var row = startRow;
   while (true) {
     // Make a copy of the cars objects where the car being moved is updated.
     const newCars = copyCars(cars);
-    newCars[letter] = { column, currentRow: row };
+    newCars[letter] = .{ .column = column, .currentRow = row };
 
     // Make a copy of the board where the car being moved is updated.
     const newBoard = copyBoard(board);
@@ -144,116 +150,129 @@ fn addVerticalMoves({ state, letter, column, startRow, endRow, delta }) {
     // Add car being moved in new location.
     setColumn(newBoard, letter, column, row, length);
 
-    const direction = delta === -1 ? "down" : "up";
+    const direction = if (delta == -1) "down" else "up";
     const distance = Math.abs(row - currentRow);
-    const move = `${letter} ${direction} ${distance}`;
+    const move = createMove(letter, direction, distance);
     addPendingState(newBoard, newCars, move, state);
 
-    if (row === endRow) break;
+    if (row == endRow) break;
     row += delta;
   }
 }
 
 // This adds states to be evaluated to the pendingStates array.
-function addMoves(letter, state) {
-  const { board, cars } = state;
+fn addMoves(letter, state) void {
+  const board = state.board;
+  const cars = state.cars;
   const length = carLength(letter);
   const car = cars[letter];
 
   if (isHorizontal(car)) {
-    const { row } = car;
+    const row = car.row;
     const boardRow = board[row];
-    const { currentColumn } = car;
+    const currentColumn = car.currentColumn;
 
     // Find the largest distance this car can be moved left.
     var startColumn = currentColumn;
-    while (startColumn > 0 && boardRow[startColumn - 1] == SPACE) {
-      startColumn--;
+    while (startColumn > 0 and boardRow[startColumn - 1] == SPACE) {
+      startColumn -= 1;
     }
 
     if (startColumn < currentColumn) {
       // Generate moves to left from largest to smallest distance.
-      addHorizontalMoves({
+      const endColumn = car.currentColumn - 1;
+      const delta = 1;
+      addHorizontalMoves(
         state,
         letter,
         row,
         startColumn,
-        endColumn: car.currentColumn - 1,
-        delta: 1,
-      });
+        endColumn,
+        delta
+      );
     }
 
     // Find the largest distance this car can be moved right.
     startColumn = car.currentColumn;
     const lastAllowed = SIZE - length;
     while (
-      startColumn < lastAllowed &&
+      startColumn < lastAllowed and
       boardRow[startColumn + length] == SPACE
     ) {
-      startColumn++;
+      startColumn += 1;
     }
 
     if (startColumn > currentColumn) {
       // Generate moves to right from largest to smallest distance.
-      addHorizontalMoves({
+      const endColumn = car.currentColumn + 1;
+      const delta = -1;
+      addHorizontalMoves(
         state,
         letter,
         row,
         startColumn,
-        endColumn: car.currentColumn + 1,
-        delta: -1,
-      });
+        endColumn,
+        delta
+      );
     }
   } else {
     // The car is vertical.
-    const { column } = car;
-    const { currentRow } = car;
+    const column = car.columne;
+    const currentRow = car.currentRow;
 
     // Find the largest distance this car can be moved up.
     var startRow = currentRow;
-    while (startRow > 0 && board[startRow - 1][column] == SPACE) {
-      startRow--;
+    while (startRow > 0 and board[startRow - 1][column] == SPACE) {
+      startRow -= 1;
     }
 
     if (startRow < currentRow) {
       // Generate moves up from largest to smallest distance.
-      addVerticalMoves({
+      const endRow = car.currentRow - 1;
+      const delta = 1;
+      addVerticalMoves(
         state,
         letter,
         column,
         startRow,
-        endRow: car.currentRow - 1,
-        delta: 1,
-      });
+        endRow,
+        delta
+      );
     }
 
     // Find the largest distance this car can be moved down.
     startRow = car.currentRow;
     const lastAllowed = SIZE - length;
     while (
-      startRow < lastAllowed &&
+      startRow < lastAllowed and
       board[startRow + length][column] == SPACE
     ) {
-      startRow++;
+      startRow += 1;
     }
 
     if (startRow > currentRow) {
       // Generate moves down from largest to smallest distance.
-      addVerticalMoves({
+      const endRow = car.currentRow + 1;
+      const delta = -1;
+      addVerticalMoves(
         state,
         letter,
         column,
         startRow,
-        endRow: car.currentRow + 1,
-        delta: -1,
-      });
+        endRow,
+        delta
+      );
     }
   }
 }
 
-fn addPendingState(board, cars, move, previousState) {
-  const newState = { previousState, board, cars, move };
-  pendingStates.push(newState);
+fn addPendingState(board, cars, move, previousState) void {
+  pendingStates.push(.{
+    .board = board,
+    .cars = cars,
+    .move = move,
+    .previousState = previousState
+  });
 }
 
 fn carLength(letter) u8 {
@@ -269,7 +288,7 @@ fn contains(string: String, char: u8) bool {
 
 
 // This makes a deep copy of a board array.
-fn copyBoard(board) {
+fn copyBoard(board) Board {
   const copy = [];
   for (board) |row| {
     copy.push([...row]);
@@ -286,8 +305,14 @@ fn copyCars(cars) {
   return copy;
 }
 
+fn createMove(letter, direction, distance) !String {
+    var move: [20]u8 = undefined;
+    try bufPrint(&move, "{} {} {}", .{letter, direction, distance});
+    return move;
+}
+
 // This creates a 2D array of car letters for a given puzzle.
-fn getBoard(cars) {
+fn getBoard(cars) Board {
   if (!cars.X) {
     panic("Puzzle is missing car X!");
   }
@@ -321,18 +346,17 @@ fn getBoard(cars) {
       }
     } else {
       // The car is vertical.
-      const { column } = car;
+      const column = car.column;
       const start = car.currentRow;
       const end = start + length;
-      for (var row = start; row < end; row++) {
+      for (start..end) |row| {
         const boardRow = boardRows[row];
 
         // Check if another car already occupies this cell.
         // If so then there is a error in the puzzle description.
         const existing = boardRow[column];
-        if (existing !== SPACE) {
-          console.error(`Car ${letter} overlaps car {existing}!`);
-          process.exit(3);
+        if (existing != SPACE) {
+          panic("Car " ++ letter ++ " overlaps car " ++ existing ++ "!");
         }
 
         boardRow[column] = letter;
