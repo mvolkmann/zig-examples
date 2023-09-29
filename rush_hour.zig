@@ -6,6 +6,7 @@
 
 const std = @import("std");
 const bufPrint = std.fmt.bufPrint;
+const allocator = std.heap.GeneralPurposeAllocator(.{});
 const stdout = std.io.getStdOut();
 const sow = stdout.writer();
 
@@ -14,7 +15,7 @@ const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" + "-".repeat(SIZE * 2 - 1) + "+";
 const SPACE = " ";
 
-const Board = [][]u8;
+const Board = []String;
 const Car = struct {
   row: u8,
   column: u8,
@@ -60,7 +61,7 @@ const PUZZLES = .{
     .Q = .{ .column = 5, .currentRow = 3 },
     .X = .{ .row = EXIT_ROW, .currentColumn = 1 },
   },
-  .p40 = {
+  .p40 = .{
     .A = .{ .row = 0, .currentColumn = 1 },
     .B = .{ .column = 4, .currentRow = 0 },
     .C = .{ .column = 1, .currentRow = 1 },
@@ -86,11 +87,6 @@ var letters = String{};
 // This is key to implementing a breadth-first search.
 const pendingStates = []State{};
 
-// This holds state ids that have already been evaluated.
-// It is used to avoid evaluating a board state multiple times.
-var visitedIds = std.BufSet.init(allocator);
-defer visitedIds.deinit();
-
 fn addHorizontalMoves(state, letter, row, startColumn, endColumn, delta) void {
   const board = state.board;
   const cars = state.cars;
@@ -100,7 +96,7 @@ fn addHorizontalMoves(state, letter, row, startColumn, endColumn, delta) void {
   var column = args.startColumn;
   while (true) {
     // Make a copy of the cars objects where the car being moved is updated.
-    const newCars = copyCars(cars);
+    const newCars = cars.clone();
     newCars[letter] = .{
       .row = state.row,
       .currentColumn = column
@@ -140,7 +136,7 @@ fn addVerticalMoves(
   var row = startRow;
   while (true) {
     // Make a copy of the cars objects where the car being moved is updated.
-    const newCars = copyCars(cars);
+    const newCars = cars.clone();
     newCars[letter] = .{ .column = column, .currentRow = row };
 
     // Make a copy of the board where the car being moved is updated.
@@ -289,18 +285,9 @@ fn contains(string: String, char: u8) bool {
 
 // This makes a deep copy of a board array.
 fn copyBoard(board) Board {
-  const copy = [];
-  for (board) |row| {
-    copy.push([...row]);
-  }
-  return copy;
-}
-
-// This makes a deep copy of a cars object.
-fn copyCars(cars) {
-  const copy = {};
-  for (letters) |letter| {
-    copy[letter] = { ...cars[letter] };
+  const copy = [6]String{};
+  for (board, 0..) |row, index| {
+    copy[index] = row;
   }
   return copy;
 }
@@ -317,7 +304,8 @@ fn getBoard(cars) Board {
     panic("Puzzle is missing car X!");
   }
 
-  const boardRows = [];
+  const boardRows = std.ArrayList().init(allocator);
+  //TODO: Caller will need to deinit this.
 
   // Create an empty board.
   for (0..SIZE) |row| {
@@ -371,7 +359,7 @@ fn getBoard(cars) Board {
 // but only for the current puzzle.
 // We only need the current row or column for each car
 // as a string of numbers from 0 to 5.
-fn getStateId(cars) {
+fn getStateId(cars) String {
   // This assumes that the order of the cars returned never changes.
   return Object.values(cars)
     .map((car) =>
@@ -381,7 +369,7 @@ fn getStateId(cars) {
 }
 
 // The goal is reached when there are no cars blocking the X car from the exit.
-fn isGoalReached(board, cars) {
+fn isGoalReached(board, cars) bool {
   // Get the column after the end of the X car.
   // This assumes the X car length is 2.
   const startColumn = cars.X.currentColumn + 2;
@@ -396,27 +384,30 @@ fn isGoalReached(board, cars) {
 }
 
 // A car is horizontal if it has a "row" property.
-const isHorizontal = (car) => car.row !== undefined;
+inline fn isHorizontal(car) bool {
+  return car.row != undefined;
+}
 
 fn print(string: String) void {
     sow.print("{s}\n", .{string});
 }
 
-fn printBoard(board) {
-  console.log(BORDER);
+fn printBoard(board) void {
+  print(BORDER);
   // We need to use forEach instead of a "for of" loop
   // so we have the index at each iteration.
-  board.forEach((row, index) => {
+  for (board, 0..) |row, index| {
     var s = "|" + row.join(SPACE);
-    if (index !== EXIT_ROW) s += "|";
-    console.log(s);
-  });
-  console.log(BORDER);
+    if (index != EXIT_ROW) s = s ++ "|";
+    print(s);
+  }
+  print(BORDER);
 }
 
-fn printMoves(lastState) {
+fn printMoves(lastState) void {
   // Get the solution moves by walk backwards from the final state.
-  const moves = [];
+  var moves = std.ArrayList(String).init(allocator);
+  defer moves.deinit();
   var state = lastState;
   // This first state doesn't have a "move" property.
   while (state.move) {
@@ -432,22 +423,27 @@ fn printMoves(lastState) {
 }
 
 // This sets the board letter used in a range of rows for a given column.
-fn setColumn(board, letter, column, startRow, length) {
+fn setColumn(board, letter, column, startRow, length) void {
   for (startRow..startRow + length) |row| {
     board[row][column] = letter;
   }
 }
 
 // This sets the board letter used in a range of columns for a given row.
-fn setRow(boardRow, letter, startColumn, length) {
+fn setRow(boardRow, letter, startColumn, length) void {
   for (startColumn..startColumn + length) |column| {
     boardRow[column] = letter;
   }
 }
 
 // This solves a given puzzle.
-fn solve(cars) {
+fn solve(cars) void {
   if (!cars) panic("Puzzle not found!");
+
+  // This holds state ids that have already been evaluated.
+  // It is used to avoid evaluating a board state multiple times.
+  var visitedIds = std.BufSet.init(allocator);
+  defer visitedIds.deinit();
 
   letters = Object.keys(cars);
 
@@ -460,7 +456,7 @@ fn solve(cars) {
   addPendingState(board, cars);
 
   // This is set when a solution is found.
-  var lastState;
+  var lastState = undefined;
 
   // While there are more states to evaluate ...
   while (pendingStates.length > 0) {
@@ -474,7 +470,8 @@ fn solve(cars) {
     // evaluate longer moves before shorter ones.
     const pendingState = pendingStates.shift();
 
-    const { board, cars } = pendingState;
+    const board = pendingState.board;
+    const cars = pendingState.cars;
 
     if (isGoalReached(board, cars)) {
       lastState = pendingState;
