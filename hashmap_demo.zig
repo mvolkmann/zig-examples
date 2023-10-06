@@ -4,7 +4,34 @@ const allocator = std.testing.allocator;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 
-test "HashMap" {
+test "ComptimeStringMap" {
+    // Create an array of tuples.
+    const list = .{
+        .{ "Gretzky", 99 },
+        .{ "Orr", 4 },
+        .{ "Ratelle", 19 },
+    };
+    try expect(list.len == 3);
+
+    // Create a compile-time map of string keys to u8 values.
+    // Since an immutable map with a fixed size is being created,
+    // there is no need to deinit it.
+    const map = std.ComptimeStringMap(u8, list);
+
+    for (map.kvs) |kv| {
+        print("{s} number is {d}.\n", .{ kv.key, kv.value });
+    }
+
+    try expect(map.has("Gretzky"));
+    try expect(map.has("Orr"));
+    try expect(map.has("Ratelle"));
+
+    try expectEqual(@as(u8, 99), map.get("Gretzky").?);
+    try expectEqual(@as(u8, 4), map.get("Orr").?);
+    try expectEqual(@as(u8, 19), map.get("Ratelle").?);
+}
+
+test "StringHashMap" {
     var map = std.StringHashMap(u8).init(allocator);
     defer map.deinit();
 

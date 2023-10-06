@@ -9,6 +9,7 @@ const bufPrint = std.fmt.bufPrint;
 const allocator = std.heap.GeneralPurposeAllocator(.{});
 const stdout = std.io.getStdOut();
 const math = std.math;
+const StringMap = std.StringHashMap;
 const sow = stdout.writer();
 
 const EXIT_ROW = 2;
@@ -26,7 +27,7 @@ const Car = struct {
 const String = []const u8;
 const State = struct {
     move: String,
-    cars: std.StringHashMap, // keys are letters and values are Car structs
+    cars: StringMap(Car), // keys are letters and values are Car structs
     board: Board,
     previousState: State,
 };
@@ -39,8 +40,8 @@ const State = struct {
 // Columns range from 0 (top) to 5 (bottom).
 // The X car is always horizontal on row 2
 // because the exit is on the right side of row 2.
-const PUZZLES = .{
-    .p1 = .{
+var puzzles = StringMap(StringMap(Car)).init(allocator);
+try puzzles.put("p1", .{
         .A = .{ .row = 0, .currentColumn = 0 },
         .B = .{ .column = 0, .currentRow = 4 },
         .C = .{ .row = 4, .currentColumn = 4 },
@@ -49,8 +50,8 @@ const PUZZLES = .{
         .Q = .{ .column = 3, .currentRow = 1 },
         .R = .{ .row = 5, .currentColumn = 2 },
         .X = .{ .row = EXIT_ROW, .currentColumn = 1 },
-    },
-    .p30 = .{
+    });
+try puzzles.put("p30", .{
         .A = .{ .column = 2, .currentRow = 0 },
         .B = .{ .column = 3, .currentRow = 1 },
         .C = .{ .row = 3, .currentColumn = 0 },
@@ -61,8 +62,8 @@ const PUZZLES = .{
         .P = .{ .row = 0, .currentColumn = 3 },
         .Q = .{ .column = 5, .currentRow = 3 },
         .X = .{ .row = EXIT_ROW, .currentColumn = 1 },
-    },
-    .p40 = .{
+    });
+try puzzles.put("p40", .{
         .A = .{ .row = 0, .currentColumn = 1 },
         .B = .{ .column = 4, .currentRow = 0 },
         .C = .{ .column = 1, .currentRow = 1 },
@@ -76,8 +77,7 @@ const PUZZLES = .{
         .P = .{ .column = 5, .currentRow = 1 },
         .Q = .{ .row = 3, .currentColumn = 0 },
         .X = .{ .row = EXIT_ROW, .currentColumn = 3 },
-    },
-};
+    });
 
 // This holds all the car letters used in the current puzzle.
 // It is set in the solve function.
