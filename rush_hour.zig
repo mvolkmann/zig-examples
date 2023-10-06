@@ -28,7 +28,7 @@ const State = struct {
     move: String,
     cars: std.StringHashMap, // keys are letters and values are Car structs
     board: Board,
-    previousState,
+    previousState: State,
 };
 
 // This object holds information about the cars in a given puzzle.
