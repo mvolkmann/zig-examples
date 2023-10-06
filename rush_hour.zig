@@ -8,6 +8,7 @@ const std = @import("std");
 const bufPrint = std.fmt.bufPrint;
 const allocator = std.heap.GeneralPurposeAllocator(.{});
 const stdout = std.io.getStdOut();
+const math = std.math;
 const sow = stdout.writer();
 
 const EXIT_ROW = 2;
@@ -22,10 +23,10 @@ const Car = struct {
     currentRow: u8,
     currentColumn: u8,
 };
-const String = []u8;
+const String = []const u8;
 const State = struct {
     move: String,
-    cars: StringHashMap, // keys are letters and values are Car structs
+    cars: std.StringHashMap, // keys are letters and values are Car structs
     board: Board,
     previousState,
 };
@@ -98,9 +99,9 @@ fn addHorizontalMoves(
     const board = state.board;
     const cars = state.cars;
     const currentColumn = cars[letter].currentColumn;
-    const length = carLength(args.letter);
+    const length = carLength(letter);
 
-    var column = args.startColumn;
+    var column = startColumn;
     while (true) {
         // Make a copy of the cars objects where the car being moved is updated.
         const newCars = cars.clone();
@@ -115,9 +116,9 @@ fn addHorizontalMoves(
         setRow(newBoardRow, letter, column, length);
 
         const direction = if (delta == -1) "right" else "left";
-        const distance = Math.abs(column - currentColumn);
+        const distance = math.absInt(column - currentColumn);
         var move = createMove(letter, direction, distance);
-        addPendingState(newBoard, newCars, move, args.state);
+        addPendingState(newBoard, newCars, move, state);
 
         if (column == endColumn) break;
         column += delta;
@@ -151,7 +152,7 @@ fn addVerticalMoves(
         setColumn(newBoard, letter, column, row, length);
 
         const direction = if (delta == -1) "down" else "up";
-        const distance = @abs(row - currentRow);
+        const distance = math.abs(row - currentRow);
         const move = createMove(letter, direction, distance);
         addPendingState(newBoard, newCars, move, state);
 
@@ -301,8 +302,8 @@ fn getBoard(cars: []Car) Board {
 
     // Create an empty board.
     for (0..SIZE) |row| {
-        const boardRow = Array(SIZE).fill(SPACE);
-        boardRows.push(boardRow);
+        const boardRow = [SIZE]u8{SPACE ** SIZE};
+        boardRows[row] = boardRow;
     }
 
     // Add cars to the board.
@@ -377,7 +378,7 @@ fn isGoalReached(board: Board, cars: []Car) bool {
 }
 
 // A car is horizontal if it has a "row" property.
-inline fn isHorizontal(car) bool {
+inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
 }
 
@@ -385,7 +386,7 @@ fn print(string: String) void {
     sow.print("{s}\n", .{string});
 }
 
-fn printBoard(board) void {
+fn printBoard(board: Board) void {
     print(BORDER);
     // We need to use forEach instead of a "for of" loop
     // so we have the index at each iteration.
@@ -397,7 +398,7 @@ fn printBoard(board) void {
     print(BORDER);
 }
 
-fn printMoves(lastState) void {
+fn printMoves(lastState: State) void {
     // Get the solution moves by walk backwards from the final state.
     var moves = std.ArrayList(String).init(allocator);
     defer moves.deinit();
@@ -416,7 +417,7 @@ fn printMoves(lastState) void {
 }
 
 // This sets the board letter used in a range of rows for a given column.
-fn setColumn(board, letter, column, startRow, length) void {
+fn setColumn(board: Board, letter: u8, column: u8, startRow: u8, length: u8) void {
     for (startRow..startRow + length) |row| {
         board[row][column] = letter;
     }
@@ -438,12 +439,10 @@ fn solve(cars: []Car) void {
     var visitedIds = std.BufSet.init(allocator);
     defer visitedIds.deinit();
 
-    letters = Object.keys(cars);
-
     const board = getBoard(cars);
-    console.log("Starting board:");
+    print("Starting board:");
     printBoard(board);
-    console.log(); // blank line
+    print(); // blank line
 
     // The initial state has no move or previous state.
     addPendingState(board, cars);
@@ -463,22 +462,23 @@ fn solve(cars: []Car) void {
         // evaluate longer moves before shorter ones.
         const pendingState = pendingStates.shift();
 
-        const board = pendingState.board;
-        const cars = pendingState.cars;
+        const pendingBoard = pendingState.board;
+        const pendingCars = pendingState.cars;
 
-        if (isGoalReached(board, cars)) {
+        if (isGoalReached(pendingBoard, pendingCars)) {
             lastState = pendingState;
             break; // finished searching for a solution
         }
 
         // Ensure that we won't evaluate this same state again.
-        const id = getStateId(cars);
+        const id = getStateId(pendingCars);
         if (!visitedIds.contains(id)) {
             visitedIds.insert(id);
 
             // Find all moves that can be made in the current state and
             // save them in pendingStates for possible evaluation later.
-            for (letters) |letter| {
+            const iter = pendingCars.keyIterator();
+            for (iter.next()) |letter| {
                 addMoves(letter, pendingState);
             }
         }
