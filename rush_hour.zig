@@ -15,7 +15,7 @@ const sow = stdout.writer();
 
 const EXIT_ROW = 2;
 const SIZE = 6; // # of rows and columns on board
-const BORDER = "+" + "-".repeat(SIZE * 2 - 1) + "+";
+const BORDER = "+" ++ ("-" ** (SIZE * 2 - 1)) ++ "+";
 const SPACE = ' ';
 
 const String = []const u8;
@@ -27,10 +27,10 @@ const Car = struct {
     currentColumn: ?u8 = undefined,
 };
 const State = struct {
-    move: String,
+    move: ?String,
     cars: CarMap, // keys are letters and values are Car structs
     board: Board,
-    previousState: *State,
+    previousState: ?*State,
 };
 
 // This holds all the car letters used in the current puzzle.
@@ -40,7 +40,7 @@ var letters: String = "";
 // These objects describe states that still need to be evaluated
 // and will not necessarily be part of the solutions.
 // This is key to implementing a breadth-first search.
-const pendingStates = [_]State{};
+var pendingStates = std.ArrayList(State).init(allocator);
 
 fn addHorizontalMoves(
     state: State,
@@ -211,7 +211,7 @@ fn addPendingState(
     move: ?String,
     previousState: ?State,
 ) void {
-    pendingStates.push(.{
+    pendingStates.append(.{
         .board = board,
         .cars = cars,
         .move = move,
@@ -250,7 +250,7 @@ fn getBoard(cars: CarMap) Board {
         @panic("Puzzle is missing car X!");
     }
 
-    const boardRows = std.ArrayList(String).init(allocator);
+    var boardRows = std.ArrayList(String).init(allocator);
     //TODO: Caller will need to deinit this.
 
     // Create an empty board.
@@ -322,6 +322,7 @@ fn getStateId(cars: CarMap) String {
         positions[i] = if (car.currentColumn == undefined) car.currentRow else car.currentColumn;
     }
     const joined = try std.mem.join(allocator, "", positions);
+    defer allocator.free(joined);
     return joined;
 }
 
@@ -347,17 +348,24 @@ inline fn isHorizontal(car: Car) bool {
 
 fn print(string: String) void {
     // This ignores errors.
-    try sow.print("{s}\n", .{string}) catch {};
+    sow.print("{s}\n", .{string}) catch {};
 }
 
-fn printBoard(board: Board) void {
+fn printBoard(board: Board) !void {
     print(BORDER);
-    // We need to use forEach instead of a "for of" loop
-    // so we have the index at each iteration.
     for (board, 0..) |row, index| {
-        var s = "|" + row.join(SPACE);
-        if (index != EXIT_ROW) s = s ++ "|";
-        print(s);
+        var buffer: [16]u8 = undefined;
+        defer allocator.free(buffer);
+        var fbs = std.io.fixedBufferStream(&buffer);
+        const writer = fbs.writer();
+        _ = try writer.write("| ");
+        for (row) |letter| {
+            try writer.print("{} ", .{letter});
+        }
+        if (index != EXIT_ROW) {
+            _ = try writer.write("|");
+        }
+        print(fbs.getWritten());
     }
     print(BORDER);
 }
@@ -395,7 +403,7 @@ fn setRow(boardRow: String, letter: u8, startColumn: u8, length: u8) void {
 }
 
 // This solves a given puzzle.
-fn solve(cars: CarMap) void {
+fn solve(cars: CarMap) !void {
     // This holds state ids that have already been evaluated.
     // It is used to avoid evaluating a board state multiple times.
     var visitedIds = std.BufSet.init(allocator);
@@ -403,7 +411,7 @@ fn solve(cars: CarMap) void {
 
     const board = getBoard(cars);
     print("Starting board:");
-    printBoard(board);
+    try printBoard(board);
     print(""); // blank line
 
     // The initial state has no move or previous state.
@@ -413,7 +421,7 @@ fn solve(cars: CarMap) void {
     var lastState: ?State = null;
 
     // While there are more states to evaluate ...
-    while (pendingStates.len > 0) {
+    while (pendingStates.items.len > 0) {
         // Get the next state to evaluate.
         // We could use a heuristic to choose which pending state to try next.
         // For example, we could select the state
@@ -422,10 +430,10 @@ fn solve(cars: CarMap) void {
         // as the time required to compute the heuristic.
         // The only kind of heuristic currently used is to
         // evaluate longer moves before shorter ones.
-        const pendingState = pendingStates.shift();
+        var pendingState = pendingStates.pop();
 
         const pendingBoard = pendingState.board;
-        const pendingCars = pendingState.cars;
+        var pendingCars = pendingState.cars;
 
         if (isGoalReached(pendingBoard, pendingCars)) {
             lastState = pendingState;
@@ -435,7 +443,7 @@ fn solve(cars: CarMap) void {
         // Ensure that we won't evaluate this same state again.
         const id = getStateId(pendingCars);
         if (!visitedIds.contains(id)) {
-            visitedIds.insert(id);
+            try visitedIds.insert(id);
 
             // Find all moves that can be made in the current state and
             // save them in pendingStates for possible evaluation later.
@@ -507,5 +515,7 @@ pub fn main() !void {
     //     .{ "X", .{ .row = EXIT_ROW, .currentColumn = 3 } },
     // });
 
-    solve(puzzle1);
+    defer pendingStates.deinit();
+
+    try solve(puzzle1);
 }
