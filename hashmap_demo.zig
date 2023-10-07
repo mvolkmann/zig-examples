@@ -3,6 +3,45 @@ const print = std.debug.print;
 const allocator = std.testing.allocator;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
+const String = []const u8;
+
+test "AutoHashMap" {
+    var map = std.AutoHashMap(u8, String).init(allocator);
+    defer map.deinit();
+
+    try map.put(99, "Gretzky");
+    try map.put(4, "Orr");
+    try map.put(19, "Ratelle");
+    try expect(map.count() == 3);
+
+    // Iterate over the map entries.
+    print("\n", .{});
+    var iter = map.iterator();
+    while (iter.next()) |entry| {
+        print("{s} number is {d}.\n", .{ entry.value_ptr.*, entry.key_ptr.* });
+    }
+
+    // Iterate over the map keys.
+    var iter2 = map.keyIterator();
+    while (iter2.next()) |key| {
+        const number = key.*;
+        if (map.get(number)) |name| {
+            print("{s} number is {d}.\n", .{ name, number });
+        }
+    }
+
+    try expect(map.contains(99));
+
+    // The `get` method returns an optional value.
+    var name = map.get(99) orelse "";
+    try expectEqualStrings("Gretzky", name);
+
+    const removed = map.remove(99);
+    try expect(removed);
+    // try expect(map.get(99) == null);
+    try expectEqual(@as(?[]const u8, null), map.get(99));
+}
 
 test "ComptimeStringMap" {
     // Create an array of tuples.

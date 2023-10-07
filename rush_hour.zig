@@ -10,7 +10,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
 const allocator = gpa.allocator();
 const stdout = std.io.getStdOut();
 const math = std.math;
-const CarMap = std.StringHashMap(?Car);
+const CarMap = std.AutoHashMap(u8, Car);
 const sow = stdout.writer();
 
 const EXIT_ROW = 2;
@@ -18,6 +18,7 @@ const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" + "-".repeat(SIZE * 2 - 1) + "+";
 const SPACE = ' ';
 
+const String = []const u8;
 const Board = []String;
 const Car = struct {
     row: ?u8 = undefined,
@@ -25,7 +26,6 @@ const Car = struct {
     currentRow: ?u8 = undefined,
     currentColumn: ?u8 = undefined,
 };
-const String = []const u8;
 const State = struct {
     move: String,
     cars: CarMap, // keys are letters and values are Car structs
@@ -240,14 +240,13 @@ fn copyBoard(board: Board) Board {
 }
 
 fn createMove(letter: u8, direction: String, distance: u8) !String {
-    var move: [20]u8 = undefined;
-    try bufPrint(&move, "{} {} {}", .{ letter, direction, distance });
-    return move;
+    var buffer: [20]u8 = undefined;
+    return try bufPrint(&buffer, "{} {} {}", .{ letter, direction, distance });
 }
 
 // This creates a 2D array of car letters for a given puzzle.
 fn getBoard(cars: CarMap) Board {
-    if (cars.get("X") == null) {
+    if (cars.get('X') == null) {
         @panic("Puzzle is missing car X!");
     }
 
@@ -262,39 +261,49 @@ fn getBoard(cars: CarMap) Board {
 
     // Add cars to the board.
     for (letters) |letter| {
-        const car = cars.get(letter);
-        const length = carLength(letter);
+        if (cars.get(letter)) |car| {
+            const length = carLength(letter);
 
-        if (isHorizontal(car)) {
-            const start = car.currentColumn;
-            const end = start + length;
-            const boardRow = boardRows.items[car.row];
-            for (start..end) |column| {
-                // Check if another car already occupies this cell.
-                // If so then there is a error in the puzzle description.
-                const existing = boardRow[column];
-                if (existing != SPACE) {
-                    @panic("Car " ++ letter ++ "overlaps car" ++ "existing");
+            if (isHorizontal(car)) {
+                if (car.currentColumn) |start| {
+                    const end = start + length;
+                    if (car.row) |row| {
+                        var boardRow = boardRows.items[row];
+                        for (start..end) |column| {
+                            // Check if another car already occupies this cell.
+                            // If so then there is a error in the puzzle description.
+                            const existing = boardRow[column];
+                            if (existing != SPACE) {
+                                var buffer: [20]u8 = undefined;
+                                const message = bufPrint(
+                                    &buffer,
+                                    "Car {} overlaps car {}",
+                                    .{ letter, existing },
+                                ) catch @panic("bufPrint failed");
+                                @panic(message);
+                            }
+
+                            boardRow[column] = letter;
+                        }
+                    }
                 }
+            } else {
+                // The car is vertical.
+                const column = car.column;
+                const start = car.currentRow;
+                const end = start + length;
+                for (start..end) |row| {
+                    const boardRow = boardRows.items[row];
 
-                boardRow[column] = letter;
-            }
-        } else {
-            // The car is vertical.
-            const column = car.column;
-            const start = car.currentRow;
-            const end = start + length;
-            for (start..end) |row| {
-                const boardRow = boardRows.items[row];
+                    // Check if another car already occupies this cell.
+                    // If so then there is a error in the puzzle description.
+                    const existing = boardRow[column];
+                    if (existing != SPACE) {
+                        @panic("Car " ++ letter ++ " overlaps car " ++ existing ++ "!");
+                    }
 
-                // Check if another car already occupies this cell.
-                // If so then there is a error in the puzzle description.
-                const existing = boardRow[column];
-                if (existing != SPACE) {
-                    @panic("Car " ++ letter ++ " overlaps car " ++ existing ++ "!");
+                    boardRow[column] = letter;
                 }
-
-                boardRow[column] = letter;
             }
         }
     }
@@ -308,7 +317,7 @@ fn getBoard(cars: CarMap) Board {
 // as a string of numbers from 0 to 5.
 fn getStateId(cars: CarMap) String {
     // This assumes that the order of the cars returned never changes.
-    var positions: [cars.len][]const u8 = undefined;
+    var positions: [cars.len]String = undefined;
     for (cars, 0..) |car, i| {
         positions[i] = if (car.currentColumn == undefined) car.currentRow else car.currentColumn;
     }
@@ -336,8 +345,9 @@ inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
 }
 
-fn print(string: String) !void {
-    try sow.print("{s}\n", .{string});
+fn print(string: String) void {
+    // This ignores errors.
+    try sow.print("{s}\n", .{string}) catch {};
 }
 
 fn printBoard(board: Board) void {
@@ -460,14 +470,14 @@ pub fn main() !void {
     var puzzle1 = CarMap.init(allocator);
     defer puzzle1.deinit();
     // Can these puts be performed at compile-time?
-    try puzzle1.put("A", .{ .row = 0, .currentColumn = 0 });
-    try puzzle1.put("B", .{ .column = 0, .currentRow = 4 });
-    try puzzle1.put("C", .{ .row = 4, .currentColumn = 4 });
-    try puzzle1.put("O", .{ .column = 5, .currentRow = 0 });
-    try puzzle1.put("P", .{ .column = 0, .currentRow = 1 });
-    try puzzle1.put("Q", .{ .column = 3, .currentRow = 1 });
-    try puzzle1.put("R", .{ .row = 5, .currentColumn = 2 });
-    try puzzle1.put("X", .{ .row = EXIT_ROW, .currentColumn = 1 });
+    try puzzle1.put('A', .{ .row = 0, .currentColumn = 0 });
+    try puzzle1.put('B', .{ .column = 0, .currentRow = 4 });
+    try puzzle1.put('C', .{ .row = 4, .currentColumn = 4 });
+    try puzzle1.put('O', .{ .column = 5, .currentRow = 0 });
+    try puzzle1.put('P', .{ .column = 0, .currentRow = 1 });
+    try puzzle1.put('Q', .{ .column = 3, .currentRow = 1 });
+    try puzzle1.put('R', .{ .row = 5, .currentColumn = 2 });
+    try puzzle1.put('X', .{ .row = EXIT_ROW, .currentColumn = 1 });
 
     // const puzzle30 = CarMap(Car, .{
     //     .{ "A", .{ .column = 2, .currentRow = 0 } },
