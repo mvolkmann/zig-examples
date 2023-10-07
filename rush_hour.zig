@@ -6,87 +6,41 @@
 
 const std = @import("std");
 const bufPrint = std.fmt.bufPrint;
-const allocator = std.heap.GeneralPurposeAllocator(.{});
+var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
+const allocator = gpa.allocator();
 const stdout = std.io.getStdOut();
 const math = std.math;
-const StringMap = std.StringHashMap;
+const CarMap = std.StringHashMap(?Car);
 const sow = stdout.writer();
 
 const EXIT_ROW = 2;
 const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" + "-".repeat(SIZE * 2 - 1) + "+";
-const SPACE = " ";
+const SPACE = ' ';
 
 const Board = []String;
 const Car = struct {
-    row: u8,
-    column: u8,
-    currentRow: u8,
-    currentColumn: u8,
+    row: ?u8 = undefined,
+    column: ?u8 = undefined,
+    currentRow: ?u8 = undefined,
+    currentColumn: ?u8 = undefined,
 };
 const String = []const u8;
 const State = struct {
     move: String,
-    cars: StringMap(Car), // keys are letters and values are Car structs
+    cars: CarMap, // keys are letters and values are Car structs
     board: Board,
-    previousState: State,
+    previousState: *State,
 };
-
-// This object holds information about the cars in a given puzzle.
-// Horizontal cars have a row property and
-// vertical cars have a column property.
-// The "current" properties give the starting position of the car.
-// Rows range from 0 (left) to 5 (right).
-// Columns range from 0 (top) to 5 (bottom).
-// The X car is always horizontal on row 2
-// because the exit is on the right side of row 2.
-var puzzles = StringMap(StringMap(Car)).init(allocator);
-try puzzles.put("p1", .{
-        .A = .{ .row = 0, .currentColumn = 0 },
-        .B = .{ .column = 0, .currentRow = 4 },
-        .C = .{ .row = 4, .currentColumn = 4 },
-        .O = .{ .column = 5, .currentRow = 0 },
-        .P = .{ .column = 0, .currentRow = 1 },
-        .Q = .{ .column = 3, .currentRow = 1 },
-        .R = .{ .row = 5, .currentColumn = 2 },
-        .X = .{ .row = EXIT_ROW, .currentColumn = 1 },
-    });
-try puzzles.put("p30", .{
-        .A = .{ .column = 2, .currentRow = 0 },
-        .B = .{ .column = 3, .currentRow = 1 },
-        .C = .{ .row = 3, .currentColumn = 0 },
-        .D = .{ .row = 3, .currentColumn = 2 },
-        .E = .{ .row = 5, .currentColumn = 0 },
-        .F = .{ .row = 5, .currentColumn = 2 },
-        .O = .{ .column = 0, .currentRow = 0 },
-        .P = .{ .row = 0, .currentColumn = 3 },
-        .Q = .{ .column = 5, .currentRow = 3 },
-        .X = .{ .row = EXIT_ROW, .currentColumn = 1 },
-    });
-try puzzles.put("p40", .{
-        .A = .{ .row = 0, .currentColumn = 1 },
-        .B = .{ .column = 4, .currentRow = 0 },
-        .C = .{ .column = 1, .currentRow = 1 },
-        .D = .{ .column = 2, .currentRow = 1 },
-        .E = .{ .column = 3, .currentRow = 3 },
-        .F = .{ .column = 2, .currentRow = 4 },
-        .G = .{ .row = 4, .currentColumn = 4 },
-        .H = .{ .row = 5, .currentColumn = 0 },
-        .I = .{ .row = 5, .currentColumn = 3 },
-        .O = .{ .column = 0, .currentRow = 0 },
-        .P = .{ .column = 5, .currentRow = 1 },
-        .Q = .{ .row = 3, .currentColumn = 0 },
-        .X = .{ .row = EXIT_ROW, .currentColumn = 3 },
-    });
 
 // This holds all the car letters used in the current puzzle.
 // It is set in the solve function.
-var letters = String{};
+var letters: String = "";
 
 // These objects describe states that still need to be evaluated
 // and will not necessarily be part of the solutions.
 // This is key to implementing a breadth-first search.
-const pendingStates = []State{};
+const pendingStates = [_]State{};
 
 fn addHorizontalMoves(
     state: State,
@@ -98,7 +52,7 @@ fn addHorizontalMoves(
 ) void {
     const board = state.board;
     const cars = state.cars;
-    const currentColumn = cars[letter].currentColumn;
+    const currentColumn = cars.get(letter).currentColumn;
     const length = carLength(letter);
 
     var column = startColumn;
@@ -135,7 +89,7 @@ fn addVerticalMoves(
 ) void {
     const board = state.board;
     const cars = state.cars;
-    const currentRow = cars[letter].currentRow;
+    const currentRow = cars.get(letter).currentRow;
     const length = carLength(letter);
 
     var row = startRow;
@@ -166,7 +120,7 @@ fn addMoves(letter: u8, state: State) void {
     const board = state.board;
     const cars = state.cars;
     const length = carLength(letter);
-    const car = cars[letter];
+    const car = cars.get(letter);
 
     if (isHorizontal(car)) {
         const row = car.row;
@@ -253,9 +207,9 @@ fn addMoves(letter: u8, state: State) void {
 
 fn addPendingState(
     board: Board,
-    cars: []Car,
-    move: String,
-    previousState: State,
+    cars: CarMap,
+    move: ?String,
+    previousState: ?State,
 ) void {
     pendingStates.push(.{
         .board = board,
@@ -292,29 +246,29 @@ fn createMove(letter: u8, direction: String, distance: u8) !String {
 }
 
 // This creates a 2D array of car letters for a given puzzle.
-fn getBoard(cars: []Car) Board {
-    if (!cars.X) {
+fn getBoard(cars: CarMap) Board {
+    if (cars.get("X") == null) {
         @panic("Puzzle is missing car X!");
     }
 
-    const boardRows = std.ArrayList().init(allocator);
+    const boardRows = std.ArrayList(String).init(allocator);
     //TODO: Caller will need to deinit this.
 
     // Create an empty board.
     for (0..SIZE) |row| {
-        const boardRow = [SIZE]u8{SPACE ** SIZE};
-        boardRows[row] = boardRow;
+        const boardRow = [_]u8{SPACE} ** SIZE;
+        boardRows.items[row] = &boardRow;
     }
 
     // Add cars to the board.
     for (letters) |letter| {
-        const car = cars[letter];
+        const car = cars.get(letter);
         const length = carLength(letter);
 
         if (isHorizontal(car)) {
             const start = car.currentColumn;
             const end = start + length;
-            const boardRow = boardRows[car.row];
+            const boardRow = boardRows.items[car.row];
             for (start..end) |column| {
                 // Check if another car already occupies this cell.
                 // If so then there is a error in the puzzle description.
@@ -331,7 +285,7 @@ fn getBoard(cars: []Car) Board {
             const start = car.currentRow;
             const end = start + length;
             for (start..end) |row| {
-                const boardRow = boardRows[row];
+                const boardRow = boardRows.items[row];
 
                 // Check if another car already occupies this cell.
                 // If so then there is a error in the puzzle description.
@@ -352,7 +306,7 @@ fn getBoard(cars: []Car) Board {
 // but only for the current puzzle.
 // We only need the current row or column for each car
 // as a string of numbers from 0 to 5.
-fn getStateId(cars: []Car) String {
+fn getStateId(cars: CarMap) String {
     // This assumes that the order of the cars returned never changes.
     var positions: [cars.len][]const u8 = undefined;
     for (cars, 0..) |car, i| {
@@ -363,10 +317,10 @@ fn getStateId(cars: []Car) String {
 }
 
 // The goal is reached when there are no cars blocking the X car from the exit.
-fn isGoalReached(board: Board, cars: []Car) bool {
+fn isGoalReached(board: Board, cars: CarMap) bool {
     // Get the column after the end of the X car.
     // This assumes the X car length is 2.
-    const startColumn = cars.X.currentColumn + 2;
+    const startColumn = cars.get("X").currentColumn + 2;
 
     const exitRow = board[EXIT_ROW];
 
@@ -382,8 +336,8 @@ inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
 }
 
-fn print(string: String) void {
-    sow.print("{s}\n", .{string});
+fn print(string: String) !void {
+    try sow.print("{s}\n", .{string});
 }
 
 fn printBoard(board: Board) void {
@@ -431,9 +385,7 @@ fn setRow(boardRow: String, letter: u8, startColumn: u8, length: u8) void {
 }
 
 // This solves a given puzzle.
-fn solve(cars: []Car) void {
-    if (!cars) @panic("Puzzle not found!");
-
+fn solve(cars: CarMap) void {
     // This holds state ids that have already been evaluated.
     // It is used to avoid evaluating a board state multiple times.
     var visitedIds = std.BufSet.init(allocator);
@@ -442,16 +394,16 @@ fn solve(cars: []Car) void {
     const board = getBoard(cars);
     print("Starting board:");
     printBoard(board);
-    print(); // blank line
+    print(""); // blank line
 
     // The initial state has no move or previous state.
-    addPendingState(board, cars);
+    addPendingState(board, cars, null, null);
 
     // This is set when a solution is found.
-    var lastState = undefined;
+    var lastState: ?State = null;
 
     // While there are more states to evaluate ...
-    while (pendingStates.length > 0) {
+    while (pendingStates.len > 0) {
         // Get the next state to evaluate.
         // We could use a heuristic to choose which pending state to try next.
         // For example, we could select the state
@@ -484,11 +436,11 @@ fn solve(cars: []Car) void {
         }
     }
 
-    if (lastState) {
+    if (lastState) |solution| {
         print("Solution found!");
-        printMoves(lastState);
+        printMoves(solution);
         print("\nFinal board:");
-        printBoard(lastState.board);
+        printBoard(solution.board);
     } else {
         print("No solution was found. :-(");
     }
@@ -497,5 +449,53 @@ fn solve(cars: []Car) void {
 // ----------------------------------------------------------------------------
 
 pub fn main() !void {
-    solve(PUZZLES.p1);
+    // These hash maps hold information about the cars in a given puzzle.
+    // Horizontal cars have a row property and
+    // vertical cars have a column property.
+    // The "current" properties give the starting position of the car.
+    // Rows range from 0 (left) to 5 (right).
+    // Columns range from 0 (top) to 5 (bottom).
+    // The X car is always horizontal on row 2
+    // because the exit is on the right side of row 2.
+    var puzzle1 = CarMap.init(allocator);
+    defer puzzle1.deinit();
+    // Can these puts be performed at compile-time?
+    try puzzle1.put("A", .{ .row = 0, .currentColumn = 0 });
+    try puzzle1.put("B", .{ .column = 0, .currentRow = 4 });
+    try puzzle1.put("C", .{ .row = 4, .currentColumn = 4 });
+    try puzzle1.put("O", .{ .column = 5, .currentRow = 0 });
+    try puzzle1.put("P", .{ .column = 0, .currentRow = 1 });
+    try puzzle1.put("Q", .{ .column = 3, .currentRow = 1 });
+    try puzzle1.put("R", .{ .row = 5, .currentColumn = 2 });
+    try puzzle1.put("X", .{ .row = EXIT_ROW, .currentColumn = 1 });
+
+    // const puzzle30 = CarMap(Car, .{
+    //     .{ "A", .{ .column = 2, .currentRow = 0 } },
+    //     .{ "B", .{ .column = 3, .currentRow = 1 } },
+    //     .{ "C", .{ .row = 3, .currentColumn = 0 } },
+    //     .{ "D", .{ .row = 3, .currentColumn = 2 } },
+    //     .{ "E", .{ .row = 5, .currentColumn = 0 } },
+    //     .{ "F", .{ .row = 5, .currentColumn = 2 } },
+    //     .{ "O", .{ .column = 0, .currentRow = 0 } },
+    //     .{ "P", .{ .row = 0, .currentColumn = 3 } },
+    //     .{ "Q", .{ .column = 5, .currentRow = 3 } },
+    //     .{ "X", .{ .row = EXIT_ROW, .currentColumn = 1 } },
+    // });
+    // const puzzle40 = CarMap(Car, .{
+    //     .{ "A", .{ .row = 0, .currentColumn = 1 } },
+    //     .{ "B", .{ .column = 4, .currentRow = 0 } },
+    //     .{ "C", .{ .column = 1, .currentRow = 1 } },
+    //     .{ "D", .{ .column = 2, .currentRow = 1 } },
+    //     .{ "E", .{ .column = 3, .currentRow = 3 } },
+    //     .{ "F", .{ .column = 2, .currentRow = 4 } },
+    //     .{ "G", .{ .row = 4, .currentColumn = 4 } },
+    //     .{ "H", .{ .row = 5, .currentColumn = 0 } },
+    //     .{ "I", .{ .row = 5, .currentColumn = 3 } },
+    //     .{ "O", .{ .column = 0, .currentRow = 0 } },
+    //     .{ "P", .{ .column = 5, .currentRow = 1 } },
+    //     .{ "Q", .{ .row = 3, .currentColumn = 0 } },
+    //     .{ "X", .{ .row = EXIT_ROW, .currentColumn = 3 } },
+    // });
+
+    solve(puzzle1);
 }
