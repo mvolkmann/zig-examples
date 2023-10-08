@@ -1,6 +1,14 @@
 const std = @import("std");
 const print = std.debug.print;
+
+// The "expectEqual" fnction has the following declaration:
+// fn expectEqual(expected: anytype, actual: @TypeOf(expected)) !void
+// So the second argument is cast to the type of the first.
+// If the expected value is a literal value,
+// it must be cast with "@as" if it is the first argument,
+// but not if it is the second.
 const expectEqual = std.testing.expectEqual;
+
 const expectError = std.testing.expectError;
 
 const EvalError = error{ Negative, TooHigh };
@@ -16,11 +24,8 @@ test "error handling" {
     // causes any error returned by "double" to be returned,
     // which would cause this test to fail.
     // "try someFn();" is equivalent to "someFn() catch |err| return err;"
-    // If a literal value is used for the expected value,
-    // it must be cast with "@as" if it is the first argument,
-    // but not if it is the second.
-    // try expectEqual(@as(i8, 4), try double(2));
-    try expectEqual(try double(2), 4);
+    // try expectEqual(@as(i8, 4), try double(2)); // requires cast
+    try expectEqual(try double(2), 4); // does not require cast
 
     try expectError(EvalError.Negative, double(-1));
 
