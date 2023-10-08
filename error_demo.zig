@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const expectEqual = std.testing.expectEqual;
 const expectError = std.testing.expectError;
 
@@ -29,21 +30,20 @@ test "error handling" {
     try expectEqual(@as(i8, 100), result);
 
     // We can test for specific errors.
-    var maybeError = double(-1);
-    try expectEqual(@as(EvalError!i8, EvalError.Negative), maybeError);
-    maybeError = double(101);
-    try expectEqual(@as(EvalError!i8, EvalError.TooHigh), maybeError);
+    try expectEqual(@as(EvalError!i8, EvalError.Negative), double(-1));
+    try expectEqual(@as(EvalError!i8, EvalError.TooHigh), double(101));
 }
 
 // This function differs from "double" in that in uses "errdefer"
 // to provide a value to use there is an attempt to return any error.
-fn doubleErrdefer(n: i8) i8 {
-    errdefer 0;
+// Defer expressions cannot use the "return" keyword.
+fn doubleErrdefer(n: i8) EvalError!i8 {
+    errdefer print("double returned an error for {d}\n", .{n});
     return double(n);
 }
 
 test "errdefer" {
-    try expectEqual(@as(i8, 4), doubleErrdefer(2));
-    try expectError(@as(i8, 0), doubleErrdefer(-1));
-    try expectError(@as(i8, 0), doubleErrdefer(101));
+    try expectEqual(@as(EvalError!i8, 4), doubleErrdefer(2));
+    try expectEqual(@as(EvalError!i8, EvalError.Negative), doubleErrdefer(-1));
+    try expectEqual(@as(EvalError!i8, EvalError.TooHigh), doubleErrdefer(101));
 }
