@@ -20,5 +20,12 @@ test "tuple" {
         print("typeInfo is {}.\n", .{@typeInfo(T)});
     }
 
-    //TODO: Can you get values from a tuple with destructuring?
+    // Destructuring can be used to get the elements of a tuple,
+    // but all the elements must be matched.
+    const e1, const e2, const e3, const e4, const e5 = tuple;
+    _ = e3;
+    _ = e4;
+    _ = e5;
+    try expectEqual(e1, true);
+    try expectEqual(e2, 19);
 }

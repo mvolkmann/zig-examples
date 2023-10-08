@@ -28,6 +28,9 @@ test "MultiArrayList" {
     // Insert an element at a specific index, zero in this case.
     try list.insert(allocator, 0, Range{ .min = 1000, .max = 9999, .current = 1234 });
 
+    // Set an element at a specific index, zero in this case.
+    list.set(0, Range{ .min = 1000, .max = 2000, .current = 1234 });
+
     try expectEqual(list.len, 3);
 
     // After the insert, r1 was moved to index 1.
