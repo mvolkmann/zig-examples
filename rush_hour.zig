@@ -10,10 +10,11 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
 const allocator = gpa.allocator();
 const stdout = std.io.getStdOut();
 const math = std.math;
-const CarMap = std.AutoHashMap(u8, Car);
+const CarMap = std.AutoArrayHashMap(u8, Car);
 const sow = stdout.writer();
 
 const EXIT_ROW = 2;
+const MAX_CARS = 16;
 const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" ++ ("-" ** (SIZE * 2 - 1)) ++ "+";
 const SPACE = ' ';
@@ -316,12 +317,17 @@ fn getBoard(cars: CarMap) Board {
 // We only need the current row or column for each car
 // as a string of numbers from 0 to 5.
 fn getStateId(cars: CarMap) String {
+    var positionsArray: [MAX_CARS]String = undefined;
+    var positionsSlice = positionsArray[0..cars.count()];
     // This assumes that the order of the cars returned never changes.
-    var positions: [cars.len]String = undefined;
-    for (cars, 0..) |car, i| {
-        positions[i] = if (car.currentColumn == undefined) car.currentRow else car.currentColumn;
+    for (cars.values(), 0..) |car, i| {
+        positionsSlice[i] = if (car.currentColumn == undefined) {
+            return car.currentRow orelse 0;
+        } else {
+            return car.currentColumn orelse 0;
+        };
     }
-    const joined = try std.mem.join(allocator, "", positions);
+    const joined = try std.mem.join(allocator, "", positionsSlice);
     defer allocator.free(joined);
     return joined;
 }
@@ -330,15 +336,22 @@ fn getStateId(cars: CarMap) String {
 fn isGoalReached(board: Board, cars: CarMap) bool {
     // Get the column after the end of the X car.
     // This assumes the X car length is 2.
-    const startColumn = cars.get("X").currentColumn + 2;
+    if (cars.get('X')) |car| {
+        if (car.currentColumn) |currentColumn| {
+            const startColumn = currentColumn + 2;
+            const exitRow = board[EXIT_ROW];
 
-    const exitRow = board[EXIT_ROW];
-
-    // Check for cars blocking the exit.
-    for (startColumn..SIZE) |column| {
-        if (exitRow[column] != SPACE) return false;
+            // Check for cars blocking the exit.
+            for (startColumn..SIZE) |column| {
+                if (exitRow[column] != SPACE) return false;
+            }
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
     }
-    return true;
 }
 
 // A car is horizontal if it has a "row" property.

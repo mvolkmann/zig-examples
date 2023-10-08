@@ -6,6 +6,33 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const String = []const u8;
 
+test "AutoArrayHashMap" {
+    var map = std.AutoArrayHashMap(u8, String).init(allocator);
+    defer map.deinit();
+
+    try map.put(99, "Gretzky");
+    try map.put(4, "Orr");
+    try map.put(19, "Ratelle");
+    try expect(map.count() == 3);
+
+    // Iterate over the map entries.
+    print("\n", .{});
+    var iter = map.iterator();
+    while (iter.next()) |entry| {
+        print("{s} number is {d}.\n", .{ entry.value_ptr.*, entry.key_ptr.* });
+    }
+
+    try expect(map.contains(99));
+
+    // The `get` method returns an optional value.
+    var name = map.get(99) orelse "";
+    try expectEqualStrings("Gretzky", name);
+
+    const removed = map.orderedRemove(99);
+    try expect(removed);
+    try expectEqual(@as(?[]const u8, null), map.get(99));
+}
+
 test "AutoHashMap" {
     var map = std.AutoHashMap(u8, String).init(allocator);
     defer map.deinit();
@@ -39,7 +66,6 @@ test "AutoHashMap" {
 
     const removed = map.remove(99);
     try expect(removed);
-    // try expect(map.get(99) == null);
     try expectEqual(@as(?[]const u8, null), map.get(99));
 }
 
@@ -71,6 +97,7 @@ test "ComptimeStringMap" {
 }
 
 test "StringHashMap" {
+    // The keys are strings and the values are unsigned integers.
     var map = std.StringHashMap(u8).init(allocator);
     defer map.deinit();
 
