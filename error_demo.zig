@@ -38,9 +38,9 @@ test "error handling" {
     try expectEqual(double(101), EvalError.TooHigh);
 }
 
-// This function differs from "double" in that in uses "errdefer"
-// to provide a value to use there is an attempt to return any error.
-// Defer expressions cannot use the "return" keyword.
+// This function differs from "double" in that in uses "errdefer".
+// Defer expressions cannot use the "return" keyword,
+// but they can execute code that typically performs some kind of cleanup.
 fn doubleErrdefer(n: i8) EvalError!i8 {
     errdefer print("double returned an error for {d}\n", .{n});
     return double(n);
@@ -48,6 +48,10 @@ fn doubleErrdefer(n: i8) EvalError!i8 {
 
 test "errdefer" {
     try expectEqual(doubleErrdefer(2), 4);
+
+    // This prints "double returned an error for -1".
     try expectEqual(doubleErrdefer(-1), EvalError.Negative);
+
+    // This prints "double returned an error for 101".
     try expectEqual(doubleErrdefer(101), EvalError.TooHigh);
 }
