@@ -16,7 +16,11 @@ test "error handling" {
     // causes any error returned by "double" to be returned,
     // which would cause this test to fail.
     // "try someFn();" is equivalent to "someFn() catch |err| return err;"
-    try expectEqual(@as(i8, 4), try double(2));
+    // If a literal value is used for the expected value,
+    // it must be cast with "@as" if it is the first argument,
+    // but not if it is the second.
+    // try expectEqual(@as(i8, 4), try double(2));
+    try expectEqual(try double(2), 4);
 
     try expectError(EvalError.Negative, double(-1));
 
@@ -24,10 +28,10 @@ test "error handling" {
 
     // "catch" provides a value to use if *any* error is returned.
     var result = double(-1) catch @as(i8, 0);
-    try expectEqual(@as(i8, 0), result);
+    try expectEqual(result, 0);
 
     result = double(101) catch @as(i8, 100);
-    try expectEqual(@as(i8, 100), result);
+    try expectEqual(result, 100);
 
     // We can test for specific errors.
     try expectEqual(@as(EvalError!i8, EvalError.Negative), double(-1));
@@ -43,7 +47,7 @@ fn doubleErrdefer(n: i8) EvalError!i8 {
 }
 
 test "errdefer" {
-    try expectEqual(@as(EvalError!i8, 4), doubleErrdefer(2));
+    try expectEqual(doubleErrdefer(2), 4);
     try expectEqual(@as(EvalError!i8, EvalError.Negative), doubleErrdefer(-1));
     try expectEqual(@as(EvalError!i8, EvalError.TooHigh), doubleErrdefer(101));
 }
