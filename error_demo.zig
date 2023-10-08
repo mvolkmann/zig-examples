@@ -43,6 +43,21 @@ test "error handling" {
     try expectEqual(double(101), EvalError.TooHigh);
 }
 
+fn safeDouble(n: i8) i8 {
+    return double(n) catch |err| {
+        print("safeDouble caught {}\n", .{err});
+        if (err == EvalError.Negative) return 0;
+        if (err == EvalError.TooHigh) return 100;
+        return 0;
+    };
+}
+
+test "catch" {
+    try expectEqual(safeDouble(2), 4);
+    try expectEqual(safeDouble(-1), 0);
+    try expectEqual(safeDouble(101), 100);
+}
+
 // This function differs from "double" in that in uses "errdefer".
 // Defer expressions cannot use the "return" keyword,
 // but they can execute code that typically performs some kind of cleanup.
