@@ -321,11 +321,7 @@ fn getStateId(cars: CarMap) String {
     var positionsSlice = positionsArray[0..cars.count()];
     // This assumes that the order of the cars returned never changes.
     for (cars.values(), 0..) |car, i| {
-        positionsSlice[i] = if (car.currentColumn == undefined) {
-            return car.currentRow orelse 0;
-        } else {
-            return car.currentColumn orelse 0;
-        };
+        positionsSlice[i] = car.currentRow orelse car.currentColumn;
     }
     const joined = try std.mem.join(allocator, "", positionsSlice);
     defer allocator.free(joined);
