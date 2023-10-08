@@ -6,6 +6,7 @@ test "tuple" {
     // Casting the integer and float literal values
     // to specific types is optional.
     const tuple = .{ true, @as(u8, 19), @as(f32, 3.14), 'A', "hello" };
+
     try expectEqual(tuple.len, 5);
     try expectEqual(tuple[0], true);
     try expectEqual(tuple[1], 19);
