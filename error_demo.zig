@@ -1,7 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
 
-// The "expectEqual" fnction has the following declaration:
+// The "expectEqual" function has the following signature:
 // fn expectEqual(expected: anytype, actual: @TypeOf(expected)) !void
 // So the second argument is cast to the type of the first.
 // If the expected value is a literal value,
