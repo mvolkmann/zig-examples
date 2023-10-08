@@ -20,9 +20,10 @@ test "tagged union" {
         number: i32,
     };
 
-    const id1 = Identifier{ .number = 1234 };
-    const id2 = Identifier{ .name = "top secret" };
-    const ids = [_]Identifier{ id1, id2 };
+    const ids = [_]Identifier{
+        Identifier{ .number = 1234 },
+        Identifier{ .name = "top secret" },
+    };
 
     for (ids) |id| {
         switch (id) {
