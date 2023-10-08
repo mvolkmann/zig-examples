@@ -34,8 +34,8 @@ test "error handling" {
     try expectEqual(result, 100);
 
     // We can test for specific errors.
-    try expectEqual(@as(EvalError!i8, EvalError.Negative), double(-1));
-    try expectEqual(@as(EvalError!i8, EvalError.TooHigh), double(101));
+    try expectEqual(double(-1), EvalError.Negative);
+    try expectEqual(double(101), EvalError.TooHigh);
 }
 
 // This function differs from "double" in that in uses "errdefer"
@@ -48,6 +48,6 @@ fn doubleErrdefer(n: i8) EvalError!i8 {
 
 test "errdefer" {
     try expectEqual(doubleErrdefer(2), 4);
-    try expectEqual(@as(EvalError!i8, EvalError.Negative), doubleErrdefer(-1));
-    try expectEqual(@as(EvalError!i8, EvalError.TooHigh), doubleErrdefer(101));
+    try expectEqual(doubleErrdefer(-1), EvalError.Negative);
+    try expectEqual(doubleErrdefer(101), EvalError.TooHigh);
 }
