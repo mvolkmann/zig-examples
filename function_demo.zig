@@ -6,6 +6,7 @@ fn double(n: i8) i8 {
 }
 
 // This syntax for defining functions is not supported.
+// See https://github.com/ziglang/zig/issues/1717#issuecomment-1627790251.
 // const triple = fn(n: i8) i8 {
 //     return n * 3;
 // }
