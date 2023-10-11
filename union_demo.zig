@@ -27,8 +27,10 @@ test "tagged union" {
 
     for (ids) |id| {
         switch (id) {
-            .name => print("got Identifier named \"{s}\"\n", .{id.name}),
-            .number => print("got Identifier #{d}\n", .{id.number}),
+            .name => |name| {
+                print("got Identifier named \"{s}\"\n", .{name});
+            },
+            .number => |number| print("got Identifier #{d}\n", .{number}),
         }
     }
 }
