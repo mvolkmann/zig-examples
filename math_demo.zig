@@ -15,8 +15,8 @@ pub fn main() !void {
     const denominator: i8 = 0;
 
     // This shows four approaches to handling errors.
-    // It assumes that std.math.divExact can return multiple kinds of errors
-    // which is probably can't.
+    // std.math.divExact can return multiple kinds of errors
+    // including DivisionByZero, Overflow, and UnexpectedRemainder.
 
     // const result = divExact(i8, numerator, denominator) catch |err| blk: {
     //     print("err = {}\n", .{err});
