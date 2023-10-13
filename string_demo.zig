@@ -1,5 +1,6 @@
 const std = @import("std");
 const expectEqualStrings = std.testing.expectEqualStrings;
+const print = std.debug.print;
 const String = []const u8;
 
 test "bufPrint" {
@@ -22,33 +23,67 @@ test "fixedBufferStream" {
     try expectEqualStrings("one-two-three", fbs.getWritten());
 }
 
-test "tokenize" {
-    const expected = [_]String{ "red", "green", "blue" };
+test "split" {
+    const expected = [_]String{ "red", "green", "", "", "blue" };
 
-    var colors1 = "red,green;blue";
+    const colors1 = "red,green,,,blue";
     // This returns an iterator that provides values obtained by
-    // splitting on any one of the given delimiters.
-    var iter = std.mem.tokenizeAny(u8, colors1, ",; ");
+    // splitting on a single delimiter that is a single value.
+    var iter1 = std.mem.splitScalar(u8, colors1, ',');
     var index: u8 = 0;
-    while (iter.next()) |color| {
+    while (iter1.next()) |color| {
         try expectEqualStrings(expected[index], color);
         index += 1;
     }
 
-    const colors2 = "red,green,blue";
+    const colors2 = "red;-)green;-);-);-)blue";
     // This returns an iterator that provides values obtained by
-    // splitting on a single delimiter that is a single value.
-    var iter2 = std.mem.tokenizeScalar(u8, colors2, ',');
+    // splitting on a single delimiter that is a sequence of values.
+    var iter2 = std.mem.splitSequence(u8, colors2, ";-)");
     index = 0;
     while (iter2.next()) |color| {
         try expectEqualStrings(expected[index], color);
         index += 1;
     }
 
-    const colors3 = "red;-)green;-)blue";
+    var colors3 = "red,green,; blue";
+    // This returns an iterator that provides values obtained by
+    // splitting on any one of the given delimiters.
+    var iter3 = std.mem.splitAny(u8, colors3, ",; ");
+    index = 0;
+    while (iter3.next()) |color| {
+        try expectEqualStrings(expected[index], color);
+        index += 1;
+    }
+}
+
+test "tokenize" {
+    const expected = [_]String{ "red", "green", "blue" };
+
+    const colors1 = "red,green,,,blue";
+    // This returns an iterator that provides values obtained by
+    // splitting on a single delimiter that is a single value.
+    var iter1 = std.mem.tokenizeScalar(u8, colors1, ',');
+    var index: u8 = 0;
+    while (iter1.next()) |color| {
+        try expectEqualStrings(expected[index], color);
+        index += 1;
+    }
+
+    const colors2 = "red;-)green;-);-);-)blue";
     // This returns an iterator that provides values obtained by
     // splitting on a single delimiter that is a sequence of values.
-    var iter3 = std.mem.tokenizeSequence(u8, colors3, ";-)");
+    var iter2 = std.mem.tokenizeSequence(u8, colors2, ";-)");
+    index = 0;
+    while (iter2.next()) |color| {
+        try expectEqualStrings(expected[index], color);
+        index += 1;
+    }
+
+    var colors3 = "red,green,; ,; blue";
+    // This returns an iterator that provides values obtained by
+    // splitting on any one of the given delimiters.
+    var iter3 = std.mem.tokenizeAny(u8, colors3, ",; ");
     index = 0;
     while (iter3.next()) |color| {
         try expectEqualStrings(expected[index], color);
