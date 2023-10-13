@@ -1,6 +1,5 @@
 const std = @import("std");
 const expectEqualStrings = std.testing.expectEqualStrings;
-const print = std.debug.print;
 const String = []const u8;
 
 test "bufPrint" {
