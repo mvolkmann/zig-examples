@@ -3,6 +3,7 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 const String = []const u8;
 
 test "basic" {
+    // s is a pointer to the string.
     const s = "Hello, world!";
     const T = @TypeOf(s);
     // 13 is the length and 0 is the sentinel (terminator) value.
