@@ -16,8 +16,12 @@ test "arrays" {
         try expectEqual(roll, dice_rolls[index]);
     }
 
+    // Copy an array.
+    const copy: [5]u8 = dice_rolls;
+    try expectEqual(copy[0], dice_rolls[0]);
+    try expect(&copy != &dice_rolls);
+
     // Get a slice of an array.
-    // Indexes begin at zero.
     const subset = dice_rolls[2..4];
     var expected_subset = [_]u8{ 6, 1 };
     try expectEqualSlices(u8, &expected_subset, subset);

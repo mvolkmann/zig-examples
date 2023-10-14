@@ -2,6 +2,13 @@ const std = @import("std");
 const expectEqualStrings = std.testing.expectEqualStrings;
 const String = []const u8;
 
+test "basic" {
+    const s = "Hello, world!";
+    const T = @TypeOf(s);
+    // 13 is the length and 0 is the sentinel (terminator) value.
+    try expectEqualStrings(@typeName(T), "*const [13:0]u8");
+}
+
 test "bufPrint" {
     var buffer: [20]u8 = undefined;
     const result = try std.fmt.bufPrint(
