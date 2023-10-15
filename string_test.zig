@@ -10,6 +10,16 @@ test "basic" {
     try expectEqualStrings(@typeName(T), "*const [13:0]u8");
 }
 
+test "multiline" {
+    const singleLine = "Out of memory.\nWe wish to hold the whole sky,\nBut we never will.";
+    const multiline =
+        \\Out of memory.
+        \\We wish to hold the whole sky,
+        \\But we never will.
+    ;
+    try expectEqualStrings(singleLine, multiline);
+}
+
 test "bufPrint" {
     var buffer: [20]u8 = undefined;
     const result = try std.fmt.bufPrint(
