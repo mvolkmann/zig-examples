@@ -1,7 +1,4 @@
 const std = @import("std");
-const print = std.debug.print;
-const base_allocator = std.testing.allocator;
-const expectEqual = std.testing.expectEqual;
 const expectApproxEqAbs = std.testing.expectApproxEqAbs;
 
 const String = []const u8;
@@ -18,7 +15,7 @@ const Car = struct {
     top_speed: u32, // miles per hour
 };
 
-const Bad = struct {
+const Wrong = struct {
     top_speed: f32, // not expected type of u32
 };
 
@@ -68,8 +65,8 @@ test "anytype" {
 
     // This results in a compile error which is good because
     // the first argument is struct whose top_speed field is not an integer.
-    // const bad = Bad{ .top_speed = 1.0 };
-    // _ = try travelTime(bad, distance);
+    // const wrong = Wrong{ .top_speed = 1.0 };
+    // _ = try travelTime(wrong, distance);
 
     // This results in a compile error which is good because
     // the first argument is not a struct with a "top_speed" field.
