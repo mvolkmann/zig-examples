@@ -70,6 +70,7 @@ test "Point struct" {
         print("value in p1 is {}\n", .{@as(field.type, @field(p1, field.name))});
     }
 
+    // Passing a pointer so the struct instance can be modified.
     translate(&p1, 2, 3);
     try expectEqual(p1.x, 3);
     try expectEqual(p1.y, 5);
