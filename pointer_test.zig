@@ -22,6 +22,7 @@ test "struct pointers" {
     const dogPtr = &dog; // single-item pointer
     try expectEqual(dog.name, "Comet");
     try expectEqual(dogPtr.*.name, "Comet");
+    try expectEqual(dogPtr.name, "Comet"); // automatic dereferencing
 
     // Pointers can only be used to modify a struct property
     // if the struct instance is not const.
