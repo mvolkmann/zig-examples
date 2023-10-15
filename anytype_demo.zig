@@ -19,6 +19,8 @@ const Wrong = struct {
     top_speed: f32, // not expected type of u32
 };
 
+// The first argument must be a struct with
+// a top_speed field that is an integer.
 fn travelTime(thing: anytype, distance: u32) !f32 {
     // We could use @TypeOf(thing) and functions like
     // std.meta.trait.hasField and std.meta.trait.isIntegral
@@ -59,9 +61,6 @@ test "anytype" {
         0.0995,
         tolerance,
     );
-
-    // The travelTime function requires its first argument
-    // to be a struct with a top_speed field that is an integer.
 
     // This results in a compile error which is good because
     // the first argument is struct whose top_speed field is not an integer.
