@@ -14,7 +14,7 @@ fn getCmdLineArgs(list: anytype) !void {
 }
 
 pub fn main() !void {
-    // It's inconvenient to access commmand-line arguments using an iterator.
+    // It's inconvenient to access command-line arguments using an iterator.
     // This copies them into an ArrayList.
     var args = std.ArrayList([]const u8).init(allocator);
     defer args.deinit();
