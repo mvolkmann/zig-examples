@@ -37,19 +37,29 @@ const Point = struct {
     }
 };
 
+// Typically this would be a method on the Point struct,
+// but we want to demonstrate passing a pointer to a struct
+// to enable modifying fields.
+fn translate(pt: *Point, dx: f32, dy: f32) void {
+    pt.x += dx;
+    pt.y += dy;
+}
+
 test "Point struct" {
-    const p0 = Point{};
-    print("p0 = {}\n", .{p0});
+    var p1 = Point{}; // modified later
+    try expectEqual(p1.x, 1);
+    try expectEqual(p1.y, 2);
 
-    const py = Point{ .y = 19 };
-    print("py = {}\n", .{py});
+    const p2 = Point{ .y = 3 };
+    try expectEqual(p2.x, 1);
+    try expectEqual(p2.y, 3);
 
-    const p1 = Point{ .x = 3, .y = 4 };
-    try expect(p1.distanceToOrigin() == 5);
+    const p3 = Point{ .x = 3, .y = 4 };
+    try expectEqual(p3.distanceToOrigin(), 5);
 
-    const p2 = Point{ .x = 6, .y = 8 };
-    try expect(p1.distanceTo(p2) == 5);
-    try expect(Point.distanceTo(p1, p2) == 5);
+    const p4 = Point{ .x = 6, .y = 8 };
+    try expectEqual(p3.distanceTo(p4), 5);
+    try expectEqual(Point.distanceTo(p3, p4), 5);
 
     // This iterates over all the fields of the Point struct,
     // prints the name, the type, and the value in the p1 instance.
@@ -59,6 +69,10 @@ test "Point struct" {
         print("found field {s} with type {s}\n", .{ field.name, @typeName(field.type) });
         print("value in p1 is {}\n", .{@as(field.type, @field(p1, field.name))});
     }
+
+    translate(&p1, 2, 3);
+    try expectEqual(p1.x, 3);
+    try expectEqual(p1.y, 5);
 }
 
 test "anonymous struct" {
