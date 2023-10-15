@@ -1,9 +1,23 @@
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
+fn touchdown(scorePtr: *u8, extraPoint: bool) !void {
+    const current = scorePtr.*;
+    scorePtr.* += 6;
+    try expectEqual(scorePtr.*, current + 6);
+    if (extraPoint) scorePtr.* += 1;
+}
+
+test "primitive pointers" {
+    var score: u8 = 3;
+    // Only need try here because touchdown uses expectEqual.
+    try touchdown(&score, true);
+    try expectEqual(score, 10);
+}
+
 const Dog = struct { name: []const u8, breed: []const u8, age: u8 };
 
-test "pointers" {
+test "struct pointers" {
     var dog = Dog{ .name = "Comet", .breed = "whippet", .age = 3 };
     const dogPtr = &dog; // single-item pointer
     try expectEqual(dog.name, "Comet");
@@ -13,14 +27,6 @@ test "pointers" {
     // if the struct instance is not const.
     dogPtr.*.name = "Oscar";
     try expectEqual(dog.name, "Oscar");
-
-    var number: u8 = 1;
-
-    // Shorthand operators can be used to
-    // modify the value referenced by a pointer.
-    const numberPtr = &number;
-    numberPtr.* += 1;
-    try expectEqual(number, 2);
 
     // Create an array of Dog instances.
     var dogs = [_]Dog{
