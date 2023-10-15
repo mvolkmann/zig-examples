@@ -2,8 +2,9 @@
 // at https://github.com/JakubSzark/zig-string.
 // You can just copy the file zig-string.zig.
 const std = @import("std");
-const assert = std.debug.assert;
 const print = std.debug.print;
+const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 const String = @import("./zig-string.zig").String;
 
 test "strings" {
@@ -15,62 +16,62 @@ test "strings" {
     // Use functions provided
     try myString.concat("abc");
     _ = myString.pop();
-    assert(myString.cmp("ab"));
+    try expect(myString.cmp("ab"));
     try myString.concat("cde");
 
-    assert(myString.cmp("abcde"));
-    assert(myString.len() == 5);
+    try expect(myString.cmp("abcde"));
+    try expectEqual(myString.len(), 5);
 
     // TODO: This is not working!
     // const mySubstr = myString.substr(1, 3);
     // print("mySubstr = {any}\n", .{mySubstr});
 
     myString.toUppercase(); // modifies in place
-    assert(myString.cmp("ABCDE"));
+    try expect(myString.cmp("ABCDE"));
 
     myString.toLowercase(); // modifies in place
-    assert(myString.cmp("abcde"));
+    try expect(myString.cmp("abcde"));
 
     var copy = try myString.clone();
     defer copy.deinit();
     copy.reverse(); // modifies in place
-    assert(copy.cmp("edcba"));
+    try expect(copy.cmp("edcba"));
 
-    assert(!myString.isEmpty());
+    try expect(!myString.isEmpty());
     myString.clear();
-    assert(myString.isEmpty());
+    try expect(myString.isEmpty());
 
     var santa = try String.init_with_contents(allocator, "Ho");
     defer santa.deinit();
-    assert(santa.cmp("Ho"));
+    try expect(santa.cmp("Ho"));
     try santa.repeat(2); // will have 3 occurrences after this
-    assert(santa.cmp("HoHoHo"));
+    try expect(santa.cmp("HoHoHo"));
 
     // TODO: Why must this be var and not const?
     var colors = try String.init_with_contents(allocator, "red,green,blue");
     defer colors.deinit();
     // Splits into []u8 slices.  This works.
     if (colors.split(",", 0)) |c1| {
-        assert(std.mem.eql(u8, c1, "red"));
+        try expect(std.mem.eql(u8, c1, "red"));
         if (colors.split(",", 4)) |c2| {
-            assert(std.mem.eql(u8, c2, "green"));
+            try expect(std.mem.eql(u8, c2, "green"));
         }
     }
 
     var padded = try String.init_with_contents(allocator, "  foo ");
-    padded.trim(); // trims in place
+    padded.trim(" "); // trims in place
     // Also see trimStart and trimEnd.
-    assert(padded.cmp("foo"));
+    try expect(padded.cmp("foo"));
 
     // Splits into String slices.  This does not work!
     // var color1 = try colors.splitToString(",", 0);
     // if (color1) |c1| {
     //     defer c1.deinit();
-    //     assert(c1.cmp("red"));
+    //     try expect(c1.cmp("red"));
     //     const color2 = try colors.splitToString(",", 4);
     //     if (color2) |c2| {
     //         defer c2.deinit();
-    //         assert(c2.cmp("green"));
+    //         try expect(c2.cmp("green"));
     //     }
     // }
 

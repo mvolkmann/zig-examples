@@ -1,5 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
+const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 
 // A type must be specified for an enum
 // in order to override its default ordinal values.
@@ -21,11 +23,11 @@ const Color = enum(u8) {
     }
 };
 
-pub fn main() void {
+test "enum" {
     const c = Color.green;
     print("c = {}\n", .{c}); // enum_demo.main.Color.green
-    print("c = {}\n", .{@intFromEnum(c)}); // 8
-    print("green primary? {}\n", .{c.isPrimary()}); // false
-    print("green primary? {}\n", .{Color.isPrimary(c)}); // false
-    print("yellow primary? {}\n", .{Color.yellow.isPrimary()}); // true
+    try expectEqual(@intFromEnum(c), 8);
+    try expect(!c.isPrimary());
+    try expect(!Color.isPrimary(c));
+    try expect(Color.yellow.isPrimary());
 }
