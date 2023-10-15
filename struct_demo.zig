@@ -23,8 +23,8 @@ fn square(n: f32) f32 {
 }
 
 const Point = struct {
-    x: f32 = 1,
-    y: f32 = 2,
+    x: f32 = 1, // default value
+    y: f32 = 2, // default value
 
     pub fn distanceToOrigin(self: Point) f32 {
         return sqrt(square(self.x) + square(self.y));
