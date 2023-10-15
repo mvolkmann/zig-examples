@@ -30,8 +30,10 @@ test "pointers" {
     // Iterate over the dogs and increment their age.
     // &dogs gives a many-item pointer.
     for (&dogs) |*d| {
-        // d.*.age += 1; // works
-        d.age += 1; // also works and is shorter.
+        // d.*.age += 1; // This works.
+        d.age += 1; // But this also works and is shorter.
+        // In C we could use "d->age++;",
+        // but Zig doesn't support the arrow or ++ operators.
     }
     try expectEqual(dogs[0].age, 4);
     try expectEqual(dogs[1].age, 8);
