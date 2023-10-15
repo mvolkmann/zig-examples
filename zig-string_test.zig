@@ -59,6 +59,7 @@ test "strings" {
     }
 
     var padded = try String.init_with_contents(allocator, "  foo ");
+    defer padded.deinit();
     padded.trim(" "); // trims in place
     // Also see trimStart and trimEnd.
     try expect(padded.cmp("foo"));
