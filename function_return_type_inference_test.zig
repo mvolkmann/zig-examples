@@ -3,7 +3,8 @@ const expectEqual = std.testing.expectEqual;
 const expectApproxEqAbs = std.testing.expectApproxEqAbs;
 
 // Squares any kind of number, returning the same type.
-// When called with a non-number, it does not compile.
+// Calls with a non-number do not compile
+// because the "*" cannot be applied to them.
 fn square(x: anytype) @TypeOf(x) {
     return x * x;
 }
