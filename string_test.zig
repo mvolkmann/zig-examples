@@ -1,5 +1,9 @@
 const std = @import("std");
+const expect = std.testing.expect;
 const expectEqualStrings = std.testing.expectEqualStrings;
+const expectStringEndsWith = std.testing.expectStringEndsWith;
+const expectStringStartsWith = std.testing.expectStringStartsWith;
+
 const String = []const u8;
 
 test "basic" {
@@ -18,6 +22,14 @@ test "multiline" {
         \\But we never will.
     ;
     try expectEqualStrings(singleLine, multiline);
+}
+
+test "starts and ends with" {
+    const s = "abcde";
+    try expect(std.mem.startsWith(u8, s, "ab"));
+    try expectStringStartsWith(s, "ab");
+    try expect(std.mem.endsWith(u8, s, "de"));
+    try expectStringEndsWith(s, "de");
 }
 
 test "bufPrint" {
