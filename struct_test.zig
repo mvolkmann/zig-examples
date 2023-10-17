@@ -35,6 +35,14 @@ const Point = struct {
         const dy = self.y - other.y;
         return sqrt(square(dx) + square(dy));
     }
+
+    // This function is called on the struct name instead of an instance
+    // because its first parameter is not an instance.
+    // Invoke this with Point.identify("I am a");
+    // to print "I am a Point."
+    pub fn identify(prefix: []const u8) void {
+        std.debug.print("{s} Point.\n", .{prefix});
+    }
 };
 
 // Typically this would be a method on the Point struct,
@@ -98,4 +106,8 @@ test "anonymous struct" {
 
     try expectEqual(*const [4:0]u8, @TypeOf(instance.key4));
     try expectEqual("text", instance.key4);
+}
+
+pub fn main() void {
+    Point.identify("I am a");
 }

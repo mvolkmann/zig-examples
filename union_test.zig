@@ -28,9 +28,30 @@ test "tagged union" {
     for (ids) |id| {
         switch (id) {
             .name => |name| {
-                print("got Identifier named \"{s}\"\n", .{name});
+                try expectEqual(name, "top secret");
             },
-            .number => |number| print("got Identifier #{d}\n", .{number}),
+            .number => |number| try expectEqual(number, 1234),
+        }
+    }
+}
+
+test "inferred enum union" {
+    const Identifier = union(enum) {
+        name: []const u8,
+        number: i32,
+    };
+
+    const ids = [_]Identifier{
+        Identifier{ .number = 1234 },
+        Identifier{ .name = "top secret" },
+    };
+
+    for (ids) |id| {
+        switch (id) {
+            .name => |name| {
+                try expectEqual(name, "top secret");
+            },
+            .number => |number| try expectEqual(number, 1234),
         }
     }
 }
