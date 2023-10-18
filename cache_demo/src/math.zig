@@ -6,5 +6,5 @@ pub fn add(a: i32, b: i32) i32 {
 }
 
 test "add works" {
-    try expectEqual(add(1, 2), 3); // passes
+    try expectEqual(add(1, 2), 5); // passes
 }

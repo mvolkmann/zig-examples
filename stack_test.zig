@@ -4,7 +4,7 @@
 const std = @import("std");
 const log = std.debug.print;
 const Allocator = std.mem.Allocator; // memory allocator interface
-const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 
 // This creates a struct that represents
 // a stack whose values are a given type.
@@ -63,22 +63,22 @@ test "stack" {
     defer stack.deinit();
 
     try stack.push(19);
-    try expect(stack.length == 1);
+    try expectEqual(stack.length, 1);
 
     try stack.push(20);
-    try expect(stack.length == 2);
+    try expectEqual(stack.length, 2);
 
     stack.print(); // output is suppressed in tests
 
     var value = stack.pop();
-    try expect(stack.length == 1);
-    try expect(value == 20);
+    try expectEqual(stack.length, 1);
+    try expectEqual(value, 20);
 
     value = stack.pop();
-    try expect(stack.length == 0);
-    try expect(value == 19);
+    try expectEqual(stack.length, 0);
+    try expectEqual(value, 19);
 
     value = stack.pop();
-    try expect(stack.length == 0);
-    try expect(value == null);
+    try expectEqual(stack.length, 0);
+    try expectEqual(value, null);
 }

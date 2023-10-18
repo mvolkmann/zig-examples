@@ -67,4 +67,32 @@ pub fn build(b: *std.Build) void {
     // running the unit tests.
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_unit_tests.step);
+
+    const demo_step = b.step("demo", "does stuff");
+    demo_step.makeFn = demoTask;
+    // Can optionally depend on another step.
+    // demo_step.dependOn(&run_cmd.step);
+}
+
+const print = std.debug.print;
+
+// The first parameter is "self" and second is "progress",
+// but use "_" if unused.
+// The fields in a std.build.Step struct instance include
+// name, dependencies, dependants, state, and more.
+// The std.Progress.Node struct instance doesn't seem very useful.
+fn demoTask(step: *std.build.Step, _: *std.Progress.Node) !void {
+    print("in {s} task\n", .{step.name});
+
+    // Print the name of each step field.
+    // const fieldNames = std.meta.fieldNames(std.build.Step);
+    // for (fieldNames) |fieldName| {
+    //     print("step field = {s}\n", .{fieldName});
+    // }
+
+    // Print the name of each progress field.
+    // const fieldNames = std.meta.fieldNames(std.Progress.Node);
+    // for (fieldNames) |fieldName| {
+    //     print("progress field = {s}\n", .{fieldName});
+    // }
 }

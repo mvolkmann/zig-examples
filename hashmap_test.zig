@@ -13,7 +13,7 @@ test "AutoArrayHashMap" {
     try map.put(99, "Gretzky");
     try map.put(4, "Orr");
     try map.put(19, "Ratelle");
-    try expect(map.count() == 3);
+    try expectEqual(map.count(), 3);
 
     // Iterate over the map entries.
     print("\n", .{});
@@ -40,7 +40,7 @@ test "AutoHashMap" {
     try map.put(99, "Gretzky");
     try map.put(4, "Orr");
     try map.put(19, "Ratelle");
-    try expect(map.count() == 3);
+    try expectEqual(map.count(), 3);
 
     // Iterate over the map entries.
     print("\n", .{});
@@ -76,7 +76,7 @@ test "ComptimeStringMap" {
         .{ "Orr", 4 },
         .{ "Ratelle", 19 },
     };
-    try expect(list.len == 3);
+    try expectEqual(list.len, 3);
 
     // Create a compile-time map of string keys to u8 values.
     // Since an immutable map with a fixed size is being created,
@@ -104,7 +104,7 @@ test "StringHashMap" {
     try map.put("Gretzky", 99);
     try map.put("Orr", 4);
     try map.put("Ratelle", 19);
-    try expect(map.count() == 3);
+    try expectEqual(map.count(), 3);
 
     // Iterate over the map entries.
     print("\n", .{});

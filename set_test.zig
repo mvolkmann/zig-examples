@@ -1,6 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
 const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 
 test "BufSet" {
     const allocator = std.testing.allocator;
@@ -10,7 +11,7 @@ test "BufSet" {
     try set.insert("Gretzky");
     try set.insert("Orr");
     try set.insert("Ratelle");
-    try expect(set.count() == 3);
+    try expectEqual(set.count(), 3);
 
     // Iterate over the set keys.
     print("\n", .{});
@@ -43,7 +44,7 @@ test "EnumSet" {
     set.insert(.orange);
     set.insert(.yellow);
     set.insert(.black);
-    try expect(set.count() == 3);
+    try expectEqual(set.count(), 3);
 
     // Iterate over the set keys.
     print("\n", .{});
