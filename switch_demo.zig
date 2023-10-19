@@ -1,8 +1,9 @@
 const std = @import("std");
 const print = std.debug.print;
+const String = []const u8;
 
 // The value of the first argument to print must be known at compile time.
-fn log(comptime text: []const u8) void {
+fn log(comptime text: String) void {
     print(text ++ "\n", .{});
 }
 
@@ -53,4 +54,35 @@ pub fn main() !void {
         .green => log("warm"),
         .blue => log("cold"),
     }
+
+    switch (getItemCount()) {
+        0 => log("You have no items.\n"),
+        1...7 => |count| print(
+            "You have {} items and can use the express lane.\n",
+            .{count},
+        ),
+        3...9 => print("overlapping\n", .{}),
+        else => |count| print(
+            "You have {} items and cannot use the express lane.\n",
+            .{count},
+        ),
+    }
+
+    // A left-side value of switch branch can come from a function call.
+    const game = "blackjack";
+    const score = 21;
+    switch (score) {
+        highestScore(game) => log("You have the highest score."),
+        else => print("Your score is {}.\n", .{score}),
+    }
+}
+
+fn highestScore(game: String) u32 {
+    if (std.mem.eql(u8, game, "bowling")) return 300;
+    if (std.mem.eql(u8, game, "blackjack")) return 21;
+    return 0; // unknown
+}
+
+fn getItemCount() u32 {
+    return 8;
 }
