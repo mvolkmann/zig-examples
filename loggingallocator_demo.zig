@@ -12,6 +12,7 @@ pub fn main() !void {
     const allocator = la.allocator();
 
     var list = std.ArrayList(String).init(allocator);
+    // var list = try std.ArrayList(String).initCapacity(allocator, 500);
     defer list.deinit();
 
     log("appending red");
