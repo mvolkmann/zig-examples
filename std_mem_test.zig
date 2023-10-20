@@ -22,7 +22,6 @@ test "std.mem" {
     try expect(std.mem.endsWith(u8, s, "baz"));
     try expect(std.mem.eql(u8, s, "foo^bar^baz"));
     try expectEqual(std.mem.indexOf(u8, s, "^"), 3);
-    try expect(std.mem.startsWith(u8, s, "foo"));
 
     try expectEqual(std.mem.indexOfMax(u32, &numbers), 2);
     try expectEqual(std.mem.indexOfMin(u32, &numbers), 3);
@@ -77,6 +76,8 @@ test "std.mem" {
         index += 1;
     }
 
+    try expect(std.mem.startsWith(u8, s, "foo"));
+
     var words = [_]String{ "foo", "bar", "baz" };
     std.mem.swap(String, &words[0], &words[2]);
     try expectEqualStrings(words[0], "baz");
@@ -86,16 +87,6 @@ test "std.mem" {
     try expectEqualStrings(std.mem.trim(u8, padded, " "), "foo bar");
     try expectEqualStrings(std.mem.trimLeft(u8, padded, " "), "foo bar  ");
     try expectEqualStrings(std.mem.trimRight(u8, padded, " "), "  foo bar");
-
-    // TODO: Add more examples of functions past the last one tested above.
-}
-
-fn isNumber(v: anytype) bool {
-    return std.meta.trait.isNumber(@TypeOf(v));
-}
-
-fn isString(v: anytype) bool {
-    return std.meta.trait.isZigString(@TypeOf(v));
 }
 
 fn lessThanU32(_: void, lhs: u32, rhs: u32) bool {
