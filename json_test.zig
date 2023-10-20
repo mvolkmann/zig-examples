@@ -1,28 +1,30 @@
 const std = @import("std");
-const expectEqualStrings = std.testing.expectEqualStrings;
+const expectEqual = std.testing.expectEqual;
 const print = std.debug.print;
+const allocator = std.testing.allocator;
 
 const Place = struct {
     lat: f32,
     long: f32,
 };
 
-test "join" {
-    // Convert a struct to a JSON string.
-    const x = Place{
+test "json" {
+    const place1 = Place{
         .lat = 51.997664,
         .long = -0.740687,
     };
-    var buf: [100]u8 = undefined;
-    var fba = std.heap.FixedBufferAllocator.init(&buf);
-    var json = std.ArrayList(u8).init(fba.allocator());
-    try std.json.stringify(x, .{}, json.writer());
 
-    print("JSON is {s}\n", .{json.items});
-
-    // See std.json.WriteStream to write JSON to a stream.
+    // Convert a struct to a JSON string.
+    var buffer: [100]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buffer);
+    try std.json.stringify(place1, .{}, fbs.writer());
+    const json = buffer[0..fbs.pos];
+    print("JSON is {s}\n", .{json});
 
     // Parse the JSON string to recreate the struct.
+    const parsed = try std.json.parseFromSlice(Place, allocator, json, .{});
+    defer parsed.deinit();
+    const place2 = parsed.value;
 
-    // try expectEqualStrings("red-green-blue", joined);
+    try expectEqual(place1, place2);
 }
