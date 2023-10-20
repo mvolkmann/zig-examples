@@ -28,6 +28,18 @@ test "std.mem" {
     try expectEqual(std.mem.lastIndexOf(u8, s, "^"), 7);
     try expectEqual(std.mem.lastIndexOfScalar(u32, &numbers, 7), 3);
 
+    try expect(std.mem.lessThan(u8, "bar", "foo"));
     try expect(!std.mem.lessThan(u8, "foo", "bar"));
     // There is no greaterThan function.
+
+    try expectEqual(std.mem.max(u32, &numbers), 42);
+    try expectEqual(std.mem.min(u32, &numbers), 7);
+    try expectEqual(std.mem.minMax(u32, &numbers), .{ .min = 7, .max = 42 });
+
+    // Will get "out of bounds for array" if not long enough.
+    var buffer: [30]u8 = undefined;
+    const times = std.mem.replace(u8, s, "^", "-", &buffer);
+    try expectEqual(times, 2);
+    const expected = "foo-bar-baz";
+    try expectEqualStrings(buffer[0..expected.len], expected);
 }
