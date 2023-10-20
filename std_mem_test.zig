@@ -49,8 +49,8 @@ test "std.mem" {
     var buffer: [30]u8 = undefined;
     const times = std.mem.replace(u8, s, "^", "-", &buffer);
     try expectEqual(times, 2);
-    const expected = "foo-bar-baz";
-    try expectEqualStrings(buffer[0..expected.len], expected);
+    const expectedReplacement = "foo-bar-baz";
+    try expectEqualStrings(buffer[0..expectedReplacement.len], expectedReplacement);
 
     std.mem.replaceScalar(u32, &numbers, 42, 0);
     const expectedNumbers = [_]u32{ 21, 19, 0, 7, 13 };
@@ -68,6 +68,14 @@ test "std.mem" {
     try expectEqualStrings(dogs[0].name, "Comet");
     try expectEqualStrings(dogs[1].name, "Oscar");
     try expectEqualStrings(dogs[2].name, "Ramsay");
+
+    const expectedPieces = [_]String{ "foo", "bar", "baz" };
+    var iter = std.mem.splitScalar(u8, s, '^');
+    var index: u8 = 0;
+    while (iter.next()) |color| {
+        try expectEqualStrings(expectedPieces[index], color);
+        index += 1;
+    }
 
     // TODO: Add more examples of functions past the last one tested above.
 }
