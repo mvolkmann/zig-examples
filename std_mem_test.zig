@@ -5,9 +5,18 @@ const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
+const String = []const u8;
+
+const Dog = struct {
+    name: String,
+    breed: String,
+};
+
 test "std.mem" {
     const s = "foo^bar^baz";
-    const numbers = [_]u32{ 21, 19, 42, 7, 13 };
+
+    // Using var instead of const so it can be sorted.
+    var numbers = [_]u32{ 21, 19, 42, 7, 13 };
 
     try expectEqual(std.mem.count(u8, s, "^"), 2);
     try expect(std.mem.endsWith(u8, s, "baz"));
@@ -42,4 +51,50 @@ test "std.mem" {
     try expectEqual(times, 2);
     const expected = "foo-bar-baz";
     try expectEqualStrings(buffer[0..expected.len], expected);
+
+    std.mem.replaceScalar(u32, &numbers, 42, 0);
+    const expectedNumbers = [_]u32{ 21, 19, 0, 7, 13 };
+    try expectEqual(numbers, expectedNumbers);
+
+    std.mem.sort(u32, &numbers, {}, lessThanU32);
+    try expectEqual(numbers, .{ 0, 7, 13, 19, 21 });
+
+    var dogs = [_]Dog{
+        .{ .name = "Oscar", .breed = "German Shorthaired Pointer" },
+        .{ .name = "Comet", .breed = "Whippet" },
+        .{ .name = "Ramsay", .breed = "Native American Indian Dog" },
+    };
+    std.mem.sort(Dog, &dogs, {}, stringField(Dog, "name").lessThan);
+    try expectEqualStrings(dogs[0].name, "Comet");
+    try expectEqualStrings(dogs[1].name, "Oscar");
+    try expectEqualStrings(dogs[2].name, "Ramsay");
+
+    // TODO: Add more examples of functions past the last one tested above.
+}
+
+fn isNumber(v: anytype) bool {
+    return std.meta.trait.isNumber(@TypeOf(v));
+}
+
+fn isString(v: anytype) bool {
+    return std.meta.trait.isZigString(@TypeOf(v));
+}
+
+fn lessThanU32(_: void, lhs: u32, rhs: u32) bool {
+    return lhs < rhs;
+}
+
+// This can be used to sort Struct instances on a given string field.
+fn stringField(comptime T: type, comptime field: []const u8) type {
+    return struct {
+        fn lessThan(
+            _: void,
+            lhs: T,
+            rhs: T,
+        ) bool {
+            const left = @field(lhs, field);
+            const right = @field(rhs, field);
+            return std.mem.lessThan(u8, left, right);
+        }
+    };
 }
