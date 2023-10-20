@@ -29,7 +29,7 @@ test "std.mem" {
     try expectEqual(std.mem.indexOfMinMax(u32, &numbers), .{ .index_min = 3, .index_max = 2 });
     try expectEqual(std.mem.indexOfScalar(u32, &numbers, 19), 1);
 
-    const strings = [_][]const u8{ "foo", "bar", "baz" };
+    const strings = [_]String{ "foo", "bar", "baz" };
     const joined = try std.mem.join(allocator, "^", &strings);
     defer allocator.free(joined);
     try expectEqualStrings(joined, "foo^bar^baz");
@@ -77,6 +77,16 @@ test "std.mem" {
         index += 1;
     }
 
+    var words = [_]String{ "foo", "bar", "baz" };
+    std.mem.swap(String, &words[0], &words[2]);
+    try expectEqualStrings(words[0], "baz");
+    try expectEqualStrings(words[2], "foo");
+
+    const padded = "  foo bar  ";
+    try expectEqualStrings(std.mem.trim(u8, padded, " "), "foo bar");
+    try expectEqualStrings(std.mem.trimLeft(u8, padded, " "), "foo bar  ");
+    try expectEqualStrings(std.mem.trimRight(u8, padded, " "), "  foo bar");
+
     // TODO: Add more examples of functions past the last one tested above.
 }
 
@@ -93,7 +103,7 @@ fn lessThanU32(_: void, lhs: u32, rhs: u32) bool {
 }
 
 // This can be used to sort Struct instances on a given string field.
-fn stringField(comptime T: type, comptime field: []const u8) type {
+fn stringField(comptime T: type, comptime field: String) type {
     return struct {
         fn lessThan(
             _: void,
