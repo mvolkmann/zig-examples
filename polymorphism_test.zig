@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const expectEqual = std.testing.expectEqual;
 
 const Circle = struct {
@@ -24,16 +25,7 @@ const Square = struct {
 };
 
 fn anyArea(shape: anytype) f32 {
-    return shape.*.area();
-}
-
-fn shapeArea(shape: *const Shape) f32 {
-    return switch (shape.*) {
-        .circle => |circle| circle.area(),
-        .rectangle => |rectangle| rectangle.area(),
-        .square => |square| square.area(),
-        else => @panic("shapeArea was passed an unsupported shape"),
-    };
+    return shape.area();
 }
 
 test "polymorphism with anytype" {
@@ -50,6 +42,7 @@ test "polymorphism with anytype" {
     const expected = [_]f32{ 12.5663706, 6.0, 4.0 };
 
     // Must be inline to iterate over a tuple.
+    // TODO: Why?
     inline for (shapes, 0..) |shape, index| {
         try expectEqual(anyArea(&shape), expected[index]);
     }
@@ -60,6 +53,14 @@ const Shape = union(enum) {
     rectangle: Rectangle,
     square: Square,
 };
+
+fn shapeArea(shape: *const Shape) f32 {
+    return switch (shape.*) {
+        .circle => |circle| circle.area(),
+        .rectangle => |rectangle| rectangle.area(),
+        .square => |square| square.area(),
+    };
+}
 
 test "polymorphism with union" {
     const shapes = [_]Shape{
