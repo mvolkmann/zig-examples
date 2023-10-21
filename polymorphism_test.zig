@@ -23,14 +23,23 @@ const Square = struct {
     }
 };
 
-fn area(shape: anytype) f32 {
+fn anyArea(shape: anytype) f32 {
     return shape.*.area();
 }
 
-test "polymorphism" {
+fn shapeArea(shape: *const Shape) f32 {
+    return switch (shape.*) {
+        .circle => |circle| circle.area(),
+        .rectangle => |rectangle| rectangle.area(),
+        .square => |square| square.area(),
+        else => @panic("shapeArea was passed an unsupported shape"),
+    };
+}
+
+test "polymorphism with anytype" {
     const r = Rectangle{ .width = 2, .height = 3 };
     try expectEqual(r.area(), 6.0);
-    try expectEqual(area(&r), 6.0);
+    try expectEqual(anyArea(&r), 6.0);
 
     const shapes = .{
         Circle{ .radius = 2 },
@@ -42,6 +51,26 @@ test "polymorphism" {
 
     // Must be inline to iterate over a tuple.
     inline for (shapes, 0..) |shape, index| {
-        try expectEqual(area(&shape), expected[index]);
+        try expectEqual(anyArea(&shape), expected[index]);
+    }
+}
+
+const Shape = union(enum) {
+    circle: Circle,
+    rectangle: Rectangle,
+    square: Square,
+};
+
+test "polymorphism with union" {
+    const shapes = [_]Shape{
+        .{ .circle = Circle{ .radius = 2 } },
+        .{ .rectangle = Rectangle{ .width = 2, .height = 3 } },
+        .{ .square = Square{ .size = 2 } },
+    };
+
+    const expected = [_]f32{ 12.5663706, 6.0, 4.0 };
+
+    for (shapes, 0..) |shape, index| {
+        try expectEqual(shapeArea(&shape), expected[index]);
     }
 }
