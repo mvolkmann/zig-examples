@@ -4,7 +4,8 @@ const std = @import("std");
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) void {
-    std.debug.print("b = {}\n", .{b});
+    //std.debug.print("b = {}\n", .{b});
+
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -69,10 +70,20 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_unit_tests.step);
 
-    const demo_step = b.step("demo", "does stuff");
-    demo_step.makeFn = demoTask;
-    // Can optionally depend on another step.
-    // demo_step.dependOn(&run_cmd.step);
+    // The first argument is the step name and the second is the
+    // description that appears when `zig build --list-steps` is entered.
+    const step1 = b.step("step1", "first step");
+    step1.makeFn = myStep1;
+
+    const step2 = b.step("step2", "second step");
+    step2.makeFn = myStep2;
+    // Can optionally depend on and number of other steps.
+    step2.dependOn(step1);
+
+    const step3 = b.step("step3", "third step");
+    step3.makeFn = myStep3;
+    step3.dependOn(step1);
+    step3.dependOn(step2);
 }
 
 const print = std.debug.print;
@@ -80,10 +91,19 @@ const print = std.debug.print;
 // The first parameter is "self" and second is "progress",
 // but use "_" if unused.
 // The fields in a std.build.Step struct instance include
-// name, dependencies, dependants, state, and more.
+// name, dependencies, dependents, state, and more.
 // The std.Progress.Node struct instance doesn't seem very useful.
-fn demoTask(step: *std.build.Step, _: *std.Progress.Node) !void {
-    print("in {s} task\n", .{step.name});
+fn myStep1(step: *std.build.Step, _: *std.Progress.Node) !void {
+    print("in {s}\n", .{step.name});
+
+    // To pass command-line arguments,
+    // enter "zig build step1 -- arg1 arg2 etc`.
+    // To access the command-line arguments ...
+    if (step.owner.args) |args| {
+        for (args) |arg| {
+            print("arg = {s}\n", .{arg});
+        }
+    }
 
     // Print the name of each step field.
     // const fieldNames = std.meta.fieldNames(std.build.Step);
@@ -96,4 +116,12 @@ fn demoTask(step: *std.build.Step, _: *std.Progress.Node) !void {
     // for (fieldNames) |fieldName| {
     //     print("progress field = {s}\n", .{fieldName});
     // }
+}
+
+fn myStep2(step: *std.build.Step, _: *std.Progress.Node) !void {
+    print("in {s}\n", .{step.name});
+}
+
+fn myStep3(step: *std.build.Step, _: *std.Progress.Node) !void {
+    print("in {s}\n", .{step.name});
 }
