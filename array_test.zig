@@ -86,6 +86,8 @@ fn mapInferred(
     }
 }
 
+// TODO: Implement a reduce function.
+
 fn isOdd(n: u8) bool {
     return n % 2 == 1;
 }
