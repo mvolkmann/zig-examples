@@ -1,5 +1,4 @@
 const std = @import("std");
-const tAlloc = std.testing.allocator;
 const expectEqual = std.testing.expectEqual;
 const String = []const u8;
 
@@ -79,7 +78,7 @@ test Collection {
         .{ .name = "cherry", .color = "red", .price = 3.0 },
     };
 
-    var arena = std.heap.ArenaAllocator.init(tAlloc);
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     const FruitCollection = Collection(Fruit);
     const coll = FruitCollection.init(arena.allocator(), &fruits);
     defer arena.deinit();
