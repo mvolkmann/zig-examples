@@ -33,6 +33,9 @@ test "tagged union" {
             .number => |number| try expectEqual(number, 1234),
         }
     }
+
+    try expectEqual(std.meta.activeTag(ids[0]), IdentifierTag.number);
+    try expectEqual(std.meta.activeTag(ids[1]), IdentifierTag.name);
 }
 
 test "inferred enum union" {
@@ -42,8 +45,8 @@ test "inferred enum union" {
     };
 
     const ids = [_]Identifier{
-        Identifier{ .number = 1234 },
-        Identifier{ .name = "top secret" },
+        .{ .number = 1234 },
+        .{ .name = "top secret" },
     };
 
     for (ids) |id| {

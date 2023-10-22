@@ -36,6 +36,9 @@ fn Collection(comptime T: type) type {
 
         pub fn filter(self: Self, comptime function: fn (T) bool) Self {
             var length = self.list.items.len;
+            // Method chaining won't work if the methods can return errors.
+            // So this uses the approach of just panicking if an error occurs.
+            // This is far from ideal!
             var list = std.ArrayList(T).initCapacity(self.allocator, length) catch @panic("filter failed");
             for (self.list.items) |item| {
                 if (function(item)) {
