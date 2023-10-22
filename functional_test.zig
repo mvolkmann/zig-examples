@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const expectEqual = std.testing.expectEqual;
 const String = []const u8;
 
@@ -8,7 +9,7 @@ const Fruit = struct {
     price: f32, // per pound
 };
 
-fn add(a: u8, b: u8) u8 {
+fn add(a: f32, b: f32) f32 {
     return a + b;
 }
 
@@ -17,7 +18,7 @@ fn getPrice(fruit: Fruit) f32 {
 }
 
 fn isRed(fruit: Fruit) bool {
-    return std.mem.eql(fruit.color, "red");
+    return std.mem.eql(u8, fruit.color, "red");
 }
 
 fn Collection(comptime T: type) type {
@@ -33,32 +34,35 @@ fn Collection(comptime T: type) type {
             return Self{ .allocator = allocator, .list = list };
         }
 
-        pub fn filter(self: Self, function: fn (self.T) bool) !Self {
-            var list = try std.ArrayList(self.T).initCapacity(self.allocator, self.list.len);
+        pub fn filter(self: Self, comptime function: fn (T) bool) Self {
+            var length = self.list.items.len;
+            var list = std.ArrayList(T).initCapacity(self.allocator, length) catch @panic("filter failed");
             for (self.list.items) |item| {
                 if (function(item)) {
                     list.appendAssumeCapacity(item);
                 }
             }
-            return Self{ .T = self.T, .allocator = self.allocator, .list = list };
+            return Self{ .allocator = self.allocator, .list = list };
         }
 
         pub fn map(
             self: Self,
-            comptime OutT: type,
-            function: fn (self.T) OutT,
-        ) !Self {
-            var list = try std.ArrayList(OutT).initCapacity(self.allocator, self.list.len);
+            comptime ItemT: type,
+            comptime CollT: type,
+            function: fn (T) ItemT,
+        ) CollT {
+            var length = self.list.items.len;
+            var list = std.ArrayList(ItemT).initCapacity(self.allocator, length) catch @panic("map failed");
             for (self.list.items) |item| {
-                try list.append(function(item));
+                list.append(function(item)) catch @panic("map failed to append");
             }
-            return Self{ .T = self.T, .allocator = self.allocator, .list = list };
+            return CollT{ .allocator = self.allocator, .list = list };
         }
 
         pub fn reduce(
             self: Self,
-            OutT: type,
-            function: fn (OutT, self.T) OutT,
+            comptime OutT: type,
+            comptime function: fn (OutT, T) OutT,
             initial: OutT,
         ) OutT {
             var result = initial;
@@ -78,15 +82,18 @@ test Collection {
         .{ .name = "cherry", .color = "red", .price = 3.0 },
     };
 
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     const FruitCollection = Collection(Fruit);
-    const coll = FruitCollection.init(arena.allocator(), &fruits);
+    const PriceCollection = Collection(f32);
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    const coll = try FruitCollection.init(arena.allocator(), &fruits);
     defer arena.deinit();
 
     const redTotal = coll
         .filter(isRed)
-        .map(f32, getPrice)
-        .reduce(add, 0.0);
-
+        .map(f32, PriceCollection, getPrice)
+        .reduce(f32, add, 0.0);
     try expectEqual(redTotal, 4.5);
 }
+
+// TODO: Show the code to do this calculation using only a for loop.
