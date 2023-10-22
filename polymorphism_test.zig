@@ -56,9 +56,9 @@ const Shape = union(enum) {
 
 fn shapeArea(shape: *const Shape) f32 {
     return switch (shape.*) {
-        .circle => |circle| circle.area(),
-        .rectangle => |rectangle| rectangle.area(),
-        .square => |square| square.area(),
+        .circle => |c| c.area(),
+        .rectangle => |r| r.area(),
+        .square => |s| s.area(),
     };
 }
 

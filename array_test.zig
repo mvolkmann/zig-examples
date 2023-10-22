@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 const print = std.debug.print;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
@@ -43,4 +44,50 @@ test "arrays" {
 
     // Arrays have a fixed length that cannot be changed.
     // For a dynamically-sized array, use std.ArrayList.
+}
+
+fn mapExplicit(
+    comptime InT: type,
+    comptime OutT: type,
+    dataIn: []const InT,
+    dataOut: []OutT,
+    function: fn (InT) OutT,
+) void {
+    assert(dataOut.len >= dataIn.len);
+    for (dataIn, dataOut) |in, *out| {
+        out.* = function(in);
+    }
+}
+
+fn mapInferred(
+    function: anytype,
+    dataIn: []const @typeInfo(@TypeOf(function)).Fn.params[0].type.?,
+    dataOut: []@typeInfo(@TypeOf(function)).Fn.return_type.?,
+) void {
+    assert(dataOut.len >= dataIn.len);
+    for (dataIn, dataOut) |in, *out| {
+        out.* = function(in);
+    }
+}
+
+fn double(n: u8) u8 {
+    return n * 2;
+}
+
+test mapExplicit {
+    const numbers = [_]u8{ 1, 2, 3 };
+    var results: [numbers.len]u8 = undefined;
+    mapExplicit(u8, u8, &numbers, &results, double);
+    for (results, 0..) |result, index| {
+        try expectEqual(numbers[index] * 2, result);
+    }
+}
+
+test mapInferred {
+    const numbers = [_]u8{ 1, 2, 3 };
+    var results: [numbers.len]u8 = undefined;
+    mapInferred(double, &numbers, &results);
+    for (results, 0..) |result, index| {
+        try expectEqual(numbers[index] * 2, result);
+    }
 }
