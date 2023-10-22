@@ -169,53 +169,55 @@ test reduce {
     try expectEqual(sum, 6);
 }
 
-const Collection = struct {
-    ItemT: type,
-    allocator: std.mem.Allocator,
-    // list: std.ArrayList(u8),
-    listPtr: *std.ArrayList,
+fn Collection(comptime T: type) type {
+    return struct {
+        allocator: std.mem.Allocator,
+        list: std.ArrayList(T),
 
-    fn init(T: type, allocator: std.mem.Allocator, items: []T) !Collection {
-        const al = std.ArrayList(T).initCapacity(allocator, items.len);
-        al.appendSlice(items);
-        return Collection{ .T = T, .allocator = allocator, .listPtr = &al };
-    }
+        const Self = @This();
 
-    fn filter(self: Collection, function: fn (self.T) bool) !Collection {
-        var list = try std.ArrayList(self.T).initCapacity(self.allocator, self.list.len);
-        for (self.list.items) |item| {
-            if (function(item)) {
-                list.appendAssumeCapacity(item);
+        pub fn init(allocator: std.mem.Allocator, items: []const T) !Self {
+            var list = try std.ArrayList(T).initCapacity(allocator, items.len);
+            try list.appendSlice(items);
+            return Self{ .allocator = allocator, .list = list };
+        }
+
+        pub fn filter(self: Self, function: fn (self.T) bool) !Self {
+            var list = try std.ArrayList(self.T).initCapacity(self.allocator, self.list.len);
+            for (self.list.items) |item| {
+                if (function(item)) {
+                    list.appendAssumeCapacity(item);
+                }
             }
+            return Self{ .T = self.T, .allocator = self.allocator, .list = list };
         }
-        return Collection{ .T = self.T, .allocator = self.allocator, .list = list };
-    }
 
-    fn map(
-        self: Collection,
-        comptime OutT: type,
-        function: fn (self.T) OutT,
-    ) !Collection {
-        var list = try std.ArrayList(OutT).initCapacity(self.allocator, self.list.len);
-        for (self.list.items) |item| {
-            try list.append(function(item));
+        pub fn map(
+            self: Self,
+            comptime OutT: type,
+            function: fn (self.T) OutT,
+        ) !Self {
+            var list = try std.ArrayList(OutT).initCapacity(self.allocator, self.list.len);
+            for (self.list.items) |item| {
+                try list.append(function(item));
+            }
+            return Self{ .T = self.T, .allocator = self.allocator, .list = list };
         }
-        return Collection{ .T = self.T, .allocator = self.allocator, .list = list };
-    }
 
-    fn reduce(
-        self: Collection,
-        OutT: type,
-        function: fn (OutT, self.T) OutT,
-        initial: OutT,
-    ) OutT {
-        var result = initial;
-        for (self.list.items) |item| {
-            result = function(result, item);
+        pub fn reduce(
+            self: Self,
+            OutT: type,
+            function: fn (OutT, self.T) OutT,
+            initial: OutT,
+        ) OutT {
+            var result = initial;
+            for (self.list.items) |item| {
+                result = function(result, item);
+            }
+            return result;
         }
-        return result;
-    }
-};
+    };
+}
 
 const Fruit = struct {
     name: String,
@@ -240,11 +242,8 @@ test Collection {
     };
 
     var arena = std.heap.ArenaAllocator.init(tAlloc);
-    const coll = Collection{
-        .T = Fruit,
-        .allocator = arena.allocator(),
-        .list = try std.ArrayList(Fruit).init(fruits),
-    };
+    const FruitCollection = Collection(Fruit);
+    const coll = FruitCollection.init(arena.allocator(), &fruits);
     defer arena.deinit();
 
     const redTotal = coll
