@@ -1,5 +1,4 @@
 const std = @import("std");
-const print = std.debug.print;
 const tAlloc = std.testing.allocator;
 const expectEqualSlices = std.testing.expectEqualSlices;
 
@@ -15,21 +14,23 @@ fn map(
     for (data) |item| {
         try list.append(function(item));
     }
-    print("list.items = {any}\n", .{list.items});
     return try list.toOwnedSlice();
 }
 
 test "anonymous function" {
     const T = u32;
     const numbers = [_]T{ 1, 2, 3 };
+
+    // Using in anonymous functions in Zig are somewhat tedious
+    // because the must be wrapped in a struct and the extracted from it.
+    // It's probably best to make it a named function outside and struct
+    // and just use that.
     const result = try map(T, T, tAlloc, &numbers, struct {
         fn double(n: T) T {
             return n * 2;
         }
     }.double);
-    tAlloc.free(result);
+    defer tAlloc.free(result);
     const expected = [_]T{ 2, 4, 6 };
-    _ = expected;
-    print("result = {any}\n", .{result});
-    //try expectEqualSlices(T, result, &expected);
+    try expectEqualSlices(T, result, &expected);
 }
