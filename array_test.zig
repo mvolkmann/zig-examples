@@ -52,11 +52,13 @@ fn filter(
     function: fn (T) bool,
     data: []const T,
 ) ![]T {
-    var list = std.ArrayList(T).init(allocator);
+    var list = try std.ArrayList(T).initCapacity(allocator, data.len);
     defer list.deinit();
     for (data) |in| {
         if (function(in)) {
-            try list.append(in);
+            // We can call this instead of "append"
+            // because we know the list already has enough space.
+            list.appendAssumeCapacity(in);
         }
     }
     return try list.toOwnedSlice();
