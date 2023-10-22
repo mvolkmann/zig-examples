@@ -46,6 +46,22 @@ test "arrays" {
     // For a dynamically-sized array, use std.ArrayList.
 }
 
+fn filter(
+    comptime T: type,
+    allocator: std.mem.Allocator,
+    function: fn (T) bool,
+    data: []const T,
+) ![]T {
+    var list = std.ArrayList(T).init(allocator);
+    defer list.deinit();
+    for (data) |in| {
+        if (function(in)) {
+            try list.append(in);
+        }
+    }
+    return try list.toOwnedSlice();
+}
+
 fn mapExplicit(
     comptime InT: type,
     comptime OutT: type,
@@ -68,6 +84,19 @@ fn mapInferred(
     for (dataIn, dataOut) |in, *out| {
         out.* = function(in);
     }
+}
+
+fn isOdd(n: u8) bool {
+    return n % 2 == 1;
+}
+
+test filter {
+    const alloc = std.testing.allocator;
+    const numbers = [_]u8{ 1, 2, 3 };
+    const results = try filter(u8, alloc, isOdd, &numbers);
+    defer alloc.free(results);
+    const expected = [_]u8{ 1, 3 };
+    try expectEqualSlices(u8, results, &expected);
 }
 
 fn double(n: u8) u8 {
