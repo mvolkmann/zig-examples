@@ -74,14 +74,14 @@ fn Collection(comptime T: type) type {
     };
 }
 
-test Collection {
-    const fruits = [_]Fruit{
-        .{ .name = "apple", .color = "red", .price = 1.5 },
-        .{ .name = "banana", .color = "yellow", .price = 0.25 },
-        .{ .name = "orange", .color = "orange", .price = 0.75 },
-        .{ .name = "cherry", .color = "red", .price = 3.0 },
-    };
+const fruits = [_]Fruit{
+    .{ .name = "apple", .color = "red", .price = 1.5 },
+    .{ .name = "banana", .color = "yellow", .price = 0.25 },
+    .{ .name = "orange", .color = "orange", .price = 0.75 },
+    .{ .name = "cherry", .color = "red", .price = 3.0 },
+};
 
+test Collection {
     const FruitCollection = Collection(Fruit);
     const PriceCollection = Collection(f32);
 
@@ -96,4 +96,12 @@ test Collection {
     try expectEqual(redTotal, 4.5);
 }
 
-// TODO: Show the code to do this calculation using only a for loop.
+test "using for loop" {
+    var redTotal: f32 = 0.0;
+    for (fruits) |fruit| {
+        if (std.mem.eql(u8, fruit.color, "red")) {
+            redTotal += fruit.price;
+        }
+    }
+    try expectEqual(redTotal, 4.5);
+}
