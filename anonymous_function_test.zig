@@ -21,10 +21,12 @@ test "anonymous function" {
     const T = u32;
     const numbers = [_]T{ 1, 2, 3 };
 
-    // Using in anonymous functions in Zig are somewhat tedious
-    // because the must be wrapped in a struct and the extracted from it.
-    // It's probably best to make it a named function outside and struct
+    // Using an anonymous function in Zig is somewhat tedious
+    // because it must be wrapped in a struct and then extracted from it.
+    // It's probably best to make it a named function outside the struct
     // and just use that.
+    // A struct containing only functions and no fields
+    // is just a namespace and doesn't consume any extra memory.
     const result = try map(T, T, tAlloc, &numbers, struct {
         fn double(n: T) T {
             return n * 2;
