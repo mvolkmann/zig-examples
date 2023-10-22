@@ -1,9 +1,11 @@
 const std = @import("std");
 const assert = std.debug.assert;
 const print = std.debug.print;
+const tAlloc = std.testing.allocator;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
+const String = []const u8;
 
 test "arrays" {
     // Create a mutable array so it can be modified later.
@@ -165,4 +167,90 @@ test reduce {
     const numbers = [_]u8{ 1, 2, 3 };
     const sum = reduce(u8, u8, &numbers, add, 0);
     try expectEqual(sum, 6);
+}
+
+const Collection = struct {
+    ItemT: type,
+    allocator: std.mem.Allocator,
+    // list: std.ArrayList(u8),
+    listPtr: *std.ArrayList,
+
+    fn init(T: type, allocator: std.mem.Allocator, items: []T) !Collection {
+        const al = std.ArrayList(T).initCapacity(allocator, items.len);
+        al.appendSlice(items);
+        return Collection{ .T = T, .allocator = allocator, .listPtr = &al };
+    }
+
+    fn filter(self: Collection, function: fn (self.T) bool) !Collection {
+        var list = try std.ArrayList(self.T).initCapacity(self.allocator, self.list.len);
+        for (self.list.items) |item| {
+            if (function(item)) {
+                list.appendAssumeCapacity(item);
+            }
+        }
+        return Collection{ .T = self.T, .allocator = self.allocator, .list = list };
+    }
+
+    fn map(
+        self: Collection,
+        comptime OutT: type,
+        function: fn (self.T) OutT,
+    ) !Collection {
+        var list = try std.ArrayList(OutT).initCapacity(self.allocator, self.list.len);
+        for (self.list.items) |item| {
+            try list.append(function(item));
+        }
+        return Collection{ .T = self.T, .allocator = self.allocator, .list = list };
+    }
+
+    fn reduce(
+        self: Collection,
+        OutT: type,
+        function: fn (OutT, self.T) OutT,
+        initial: OutT,
+    ) OutT {
+        var result = initial;
+        for (self.list.items) |item| {
+            result = function(result, item);
+        }
+        return result;
+    }
+};
+
+const Fruit = struct {
+    name: String,
+    color: String,
+    price: f32, // per pound
+};
+
+fn getPrice(fruit: Fruit) f32 {
+    return fruit.price;
+}
+
+fn isRed(fruit: Fruit) bool {
+    return std.mem.eql(fruit.color, "red");
+}
+
+test Collection {
+    const fruits = [_]Fruit{
+        .{ .name = "apple", .color = "red", .price = 1.5 },
+        .{ .name = "banana", .color = "yellow", .price = 0.25 },
+        .{ .name = "orange", .color = "orange", .price = 0.75 },
+        .{ .name = "cherry", .color = "red", .price = 3.0 },
+    };
+
+    var arena = std.heap.ArenaAllocator.init(tAlloc);
+    const coll = Collection{
+        .T = Fruit,
+        .allocator = arena.allocator(),
+        .list = try std.ArrayList(Fruit).init(fruits),
+    };
+    defer arena.deinit();
+
+    const redTotal = coll
+        .filter(isRed)
+        .map(f32, getPrice)
+        .reduce(add, 0.0);
+
+    try expectEqual(redTotal, 4.5);
 }
