@@ -46,6 +46,10 @@ test "arrays" {
     // For a dynamically-sized array, use std.ArrayList.
 }
 
+fn double(n: u8) u8 {
+    return n * 2;
+}
+
 fn filter(
     comptime T: type,
     allocator: std.mem.Allocator,
@@ -60,6 +64,28 @@ fn filter(
             // because we know the list already has enough space.
             list.appendAssumeCapacity(in);
         }
+    }
+    return try list.toOwnedSlice();
+}
+
+fn isOdd(n: u8) bool {
+    return n % 2 == 1;
+}
+
+// Note that there are three implementations of the map function here,
+// each with different characteristics.
+
+fn map(
+    comptime InT: type,
+    comptime OutT: type,
+    allocator: std.mem.Allocator,
+    data: []const InT,
+    function: fn (InT) OutT,
+) ![]OutT {
+    var list = try std.ArrayList(OutT).initCapacity(allocator, data.len);
+    defer list.deinit();
+    for (data) |item| {
+        try list.append(function(item));
     }
     return try list.toOwnedSlice();
 }
@@ -88,11 +114,21 @@ fn mapInferred(
     }
 }
 
-// TODO: Implement a reduce function.
-
-fn isOdd(n: u8) bool {
-    return n % 2 == 1;
+fn reduce(
+    comptime InT: type,
+    comptime OutT: type,
+    data: []const InT,
+    function: fn (OutT, InT) OutT,
+    initial: OutT,
+) !OutT {
+    var result = initial;
+    for (data) |item| {
+        result = function(result, item);
+    }
+    return result;
 }
+
+// TODO: Implement a reduce function.
 
 test filter {
     const alloc = std.testing.allocator;
@@ -101,10 +137,6 @@ test filter {
     defer alloc.free(results);
     const expected = [_]u8{ 1, 3 };
     try expectEqualSlices(u8, results, &expected);
-}
-
-fn double(n: u8) u8 {
-    return n * 2;
 }
 
 test mapExplicit {
@@ -123,4 +155,14 @@ test mapInferred {
     for (results, 0..) |result, index| {
         try expectEqual(numbers[index] * 2, result);
     }
+}
+
+fn add(a: u8, b: u8) u8 {
+    return a + b;
+}
+
+test reduce {
+    const numbers = [_]u8{ 1, 2, 3 };
+    const sum = reduce(u8, u8, &numbers, add, 0);
+    try expectEqual(sum, 6);
 }
