@@ -74,6 +74,17 @@ test "AutoHashMap" {
     try expectEqual(@as(?String, null), map.get(99));
 }
 
+test "BufMap" {
+    var map = std.BufMap.init(allocator);
+    defer map.deinit();
+
+    try map.put("Comet", "whippet");
+    try map.put("Oscar", "german shorthaired pointer");
+    try expectEqual(map.count(), 2);
+    try expectEqualStrings(map.get("Comet").?, "whippet");
+    try expectEqualStrings(map.get("Oscar").?, "german shorthaired pointer");
+}
+
 test "ComptimeStringMap" {
     // Create an array of tuples.
     const list = .{
