@@ -86,9 +86,6 @@ test "Point struct" {
 }
 
 test "anonymous struct" {
-    const not_used = 5;
-    _ = not_used;
-
     const instance = .{
         .key1 = true, // type is bool
         .key2 = 19, // type is comptime_int
