@@ -30,7 +30,7 @@ test "AutoArrayHashMap" {
 
     const removed = map.orderedRemove(99);
     try expect(removed);
-    try expectEqual(@as(?[]const u8, null), map.get(99));
+    try expectEqual(@as(?String, null), map.get(99));
 }
 
 test "AutoHashMap" {
@@ -66,7 +66,7 @@ test "AutoHashMap" {
 
     const removed = map.remove(99);
     try expect(removed);
-    try expectEqual(@as(?[]const u8, null), map.get(99));
+    try expectEqual(@as(?String, null), map.get(99));
 }
 
 test "ComptimeStringMap" {
@@ -94,6 +94,28 @@ test "ComptimeStringMap" {
     try expectEqual(@as(u8, 99), map.get("Gretzky").?);
     try expectEqual(@as(u8, 4), map.get("Orr").?);
     try expectEqual(@as(u8, 19), map.get("Ratelle").?);
+}
+
+test "StringArrayHashMap" {
+    const Dog = struct {
+        name: String,
+        breed: String,
+    };
+    const dogs = [_]Dog{
+        .{ .name = "Comet", .breed = "whippet" },
+        .{ .name = "Oscar", .breed = "german shorthaired pointer" },
+    };
+
+    // The keys are strings and the values are Dogs.
+    var map = std.StringArrayHashMap(Dog).init(allocator);
+    defer map.deinit();
+
+    for (dogs) |dog| {
+        try map.put(dog.name, dog);
+    }
+
+    try expectEqualStrings(map.get("Comet").?.breed, "whippet");
+    try expectEqualStrings(map.get("Oscar").?.breed, "german shorthaired pointer");
 }
 
 test "StringHashMap" {
