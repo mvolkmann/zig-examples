@@ -23,9 +23,14 @@ fn square(n: f32) f32 {
 }
 
 const Point = struct {
+    // This is a constant because it is "pub const".
+    pub const dimensions = 2;
+
     x: f32 = 1, // default value
     y: f32 = 2, // default value
 
+    // This is a method because it is "pub" and
+    // takes an instance of the struct as its first argument.
     pub fn distanceToOrigin(self: Point) f32 {
         return sqrt(square(self.x) + square(self.y));
     }
@@ -93,17 +98,17 @@ test "anonymous struct" {
         .key4 = "text", // type is *const [4:0]u8; 0 is the alignment
     };
 
-    try expectEqual(bool, @TypeOf(instance.key1));
-    try expectEqual(true, instance.key1);
+    try expectEqual(@TypeOf(instance.key1), bool);
+    try expectEqual(instance.key1, true);
 
-    try expectEqual(comptime_int, @TypeOf(instance.key2));
-    try expectEqual(19, instance.key2);
+    try expectEqual(@TypeOf(instance.key2), comptime_int);
+    try expectEqual(instance.key2, 19);
 
-    try expectEqual(comptime_int, @TypeOf(instance.key3));
-    try expectEqual('x', instance.key3);
+    try expectEqual(@TypeOf(instance.key3), comptime_int);
+    try expectEqual(instance.key3, 'x');
 
-    try expectEqual(*const [4:0]u8, @TypeOf(instance.key4));
-    try expectEqual("text", instance.key4);
+    try expectEqual(@TypeOf(instance.key4), *const [4:0]u8);
+    try expectEqual(instance.key4, "text");
 }
 
 pub fn main() void {
