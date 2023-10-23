@@ -6,6 +6,11 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const String = []const u8;
 
+const Dog = struct {
+    name: String,
+    breed: String,
+};
+
 test "AutoArrayHashMap" {
     var map = std.AutoArrayHashMap(u8, String).init(allocator);
     defer map.deinit();
@@ -97,10 +102,6 @@ test "ComptimeStringMap" {
 }
 
 test "StringArrayHashMap" {
-    const Dog = struct {
-        name: String,
-        breed: String,
-    };
     const dogs = [_]Dog{
         .{ .name = "Comet", .breed = "whippet" },
         .{ .name = "Oscar", .breed = "german shorthaired pointer" },
