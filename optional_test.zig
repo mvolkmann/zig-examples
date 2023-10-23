@@ -9,7 +9,6 @@ test "optional" {
     // Only optional variables can be set to "null".
     var b: ?i8 = null;
 
-    //TODO: Why does Zig require casting the 0 and null values here?
     try expectEqual(a, 0);
     try expectEqual(b, null);
 
@@ -79,7 +78,6 @@ test "struct with optional fields" {
     try expectEqual(dog4.name, null);
     try expectEqual(dog4.breed, null);
 
-    //TODO: Why is the cast to String necessary here?
     try expectEqual(present(dog1), "Comet");
     try expectEqual(present(dog2), "Oscar");
     try expectEqual(present(dog3), "Beagle");

@@ -72,7 +72,8 @@ test "Point struct" {
     // This iterates over all the fields of the Point struct,
     // prints the name, the type, and the value in the p1 instance.
     print("\n", .{});
-    // TODO: Why does this only work with "inline"?
+    // This must be inline because the types of the values
+    // returned by std.meta.fields are not all the same.
     inline for (std.meta.fields(@TypeOf(p1))) |field| {
         print("found field {s} with type {s}\n", .{ field.name, @typeName(field.type) });
         print("value in p1 is {}\n", .{@as(field.type, @field(p1, field.name))});
