@@ -14,7 +14,8 @@ test "arrays" {
 
     // Use a for loop to iterate over the items in an array or slice.
     // A for loop can iterate over multiple arrays at the same time.
-    // This is being used to iterate over the array elements AND their indices.
+    // This is being used to iterate over
+    // the array elements AND their indices.
     for (dice_rolls, 0..) |roll, index| {
         try expectEqual(roll, dice_rolls[index]);
     }
@@ -46,6 +47,25 @@ test "arrays" {
 
     // Arrays have a fixed length that cannot be changed.
     // For a dynamically-sized array, use std.ArrayList.
+}
+
+test "multi-dimensional array" {
+    var matrix = [3][3]f64{
+        [_]f64{ 1.0, 2.0, 3.0 },
+        [_]f64{ 4.0, 5.0, 6.0 },
+        [_]f64{ 7.0, 8.0, 9.0 },
+    };
+
+    const row_index = 1;
+    const column_index = 2;
+    try expectEqual(matrix[row_index][column_index], 6.0);
+
+    for (matrix) |row| {
+        print("\n", .{});
+        for (row) |value| {
+            print("{} ", .{value});
+        }
+    }
 }
 
 fn double(n: u8) u8 {

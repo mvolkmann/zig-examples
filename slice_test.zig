@@ -21,4 +21,7 @@ test "slice" {
     try expectEqual(array[2], 30);
     array[3] = 40;
     try expectEqual(array[3], 40);
+
+    // array[7] = 0; // error: index 7 outside array of length 5
+    // slice[8] = 0; // error: index 8 outside array of length 2
 }

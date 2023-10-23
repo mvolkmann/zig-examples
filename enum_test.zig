@@ -23,11 +23,22 @@ const Color = enum(u8) {
     }
 };
 
+const Sport = enum(i32) {
+    baseball = 10,
+    basketball = 20,
+    football = 30,
+    hockey = 40,
+    soccer = 50,
+};
+
 test "enum" {
     const c = Color.green;
     print("c = {}\n", .{c}); // enum_demo.main.Color.green
+
     try expectEqual(@intFromEnum(c), 8);
     try expect(!c.isPrimary());
     try expect(!Color.isPrimary(c));
     try expect(Color.yellow.isPrimary());
+
+    print("hockey = {}\n", .{@intFromEnum(Sport.hockey)});
 }
