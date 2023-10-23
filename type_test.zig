@@ -25,10 +25,11 @@ test "tuple" {
         print("value in dog is {any}\n", .{@as(field.type, @field(dog, field.name))});
     }
 
-    // TODO: I AM NOT UNDERSTANDING HOW TO USE THE OBJECT RETURNED BY @typeInfo!
     const info = @typeInfo(Dog);
-    // The fields in this object depend on the type.
-    for (info.Struct.fields) |field| {
-        print("\nfield \"{s}\"\n", .{field.name});
+    if (info == .Struct) {
+        const fields = std.meta.fields(Dog);
+        inline for (fields) |field| {
+            print("field \"{s}\" is a {}.\n", .{ field.name, field.type });
+        }
     }
 }
