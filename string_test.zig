@@ -14,6 +14,11 @@ test "basic" {
     try expectEqualStrings(@typeName(T), "*const [13:0]u8");
 }
 
+test "concat chars" {
+    const name = [_]u8{ 'M', 'a', 'r', 'k' };
+    try expectEqualStrings(&name, "Mark");
+}
+
 test "multiline" {
     const singleLine = "Out of memory.\nWe wish to hold the whole sky,\nBut we never will.";
     const multiline =
