@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const trait = std.meta.trait;
 const expectEqual = std.testing.expectEqual;
 
 const Circle = struct {
@@ -25,6 +26,13 @@ const Square = struct {
 };
 
 fn anyArea(shape: anytype) f32 {
+    // This comptime block isn't necessary, but it provides documentation
+    // about the expectations of the shape type.
+    comptime {
+        if (!trait.hasFn("area")(@TypeOf(shape.*))) {
+            @compileError("anyArea expects shape to have area function");
+        }
+    }
     return shape.area();
 }
 
@@ -41,8 +49,6 @@ test "polymorphism with anytype" {
 
     const expected = [_]f32{ 12.5663706, 6.0, 4.0 };
 
-    // Must be inline to iterate over a tuple.
-    // TODO: Why?
     inline for (shapes, 0..) |shape, index| {
         try expectEqual(anyArea(&shape), expected[index]);
     }
