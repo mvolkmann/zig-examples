@@ -2,10 +2,30 @@ const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
 test "vectors" {
-    // The benefit is most apparent when the length is large.
-    // The length cannot be inferred using _.
+    // The benefit of using vectors is most apparent when
+    // the length is large and SIMD operations are performed on it.
+
+    // The length of a new vector cannot be inferred using _.
     const MyVec = @Vector(3, f32);
     const v1 = MyVec{ 1.2, 2.3, 3.4 };
+
+    // Elements can be accessed just like with arrays and slices.
+    try expectEqual(v1[0], 1.2);
+    try expectEqual(v1[1], 2.3);
+    try expectEqual(v1[2], 3.4);
+
+    // Can create a vector from an array.
+    const arr1 = [_]f32{ 1.2, 2.3, 3.4 };
+    const vFromArr: @Vector(3, f32) = arr1;
+
+    // Can create array from vector.
+    const arr2: [3]f32 = vFromArr;
+    try expectEqual(arr1, arr2);
+
+    // To iterate over vector elements,
+    // create an array from it and iterate over the array.
+
+    // Can add two vectors.
     const v2 = MyVec{ 9.8, 8.7, 7.6 };
     const v3 = v1 + v2;
     try expectEqual(v3[0], 1.2 + 9.8);
