@@ -68,7 +68,9 @@ test "Point struct" {
     try expectEqual(p2.y, 3);
 
     const p3 = Point{ .x = 3, .y = 4 };
+    // Two ways to call a method.
     try expectEqual(p3.distanceToOrigin(), 5);
+    try expectEqual(Point.distanceToOrigin(p3), 5);
 
     const p4 = Point{ .x = 6, .y = 8 };
     try expectEqual(p3.distanceTo(p4), 5);
