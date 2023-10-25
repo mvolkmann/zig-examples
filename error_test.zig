@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const String = []const u8;
 
 // The "expectEqual" function has the following signature:
 // fn expectEqual(expected: anytype, actual: @TypeOf(expected)) !void
@@ -8,6 +9,8 @@ const print = std.debug.print;
 // it must be cast with "@as" if it is the first argument,
 // but not if it is the second.
 const expectEqual = std.testing.expectEqual;
+
+const expectEqualStrings = std.testing.expectEqualStrings;
 
 const expectError = std.testing.expectError;
 
@@ -74,4 +77,52 @@ test "errdefer" {
 
     // This prints "double returned an error for 101".
     try expectEqual(doubleErrdefer(101), EvalError.TooHigh);
+}
+
+const ErrorData = struct {
+    value: i32,
+    message: String,
+};
+
+fn process(number: i32, error_out: *ErrorData) EvalError!i32 {
+    if (number < 0) {
+        error_out.value = number;
+        error_out.message = "negative";
+        return EvalError.Negative;
+    }
+    if (number > 100) {
+        error_out.value = number;
+        error_out.message = "too high";
+        return EvalError.TooHigh;
+    }
+
+    return number * 2;
+}
+
+test "error with associated data #1" {
+    var error_data: ErrorData = undefined;
+    _ = process(-1, &error_data) catch {
+        try expectEqual(error_data.value, -1);
+        try expectEqualStrings(error_data.message, "negative");
+        return;
+    };
+    unreachable;
+}
+
+test "error with associated data #2" {
+    var error_data: ErrorData = undefined;
+    _ = process(101, &error_data) catch {
+        try expectEqual(error_data.value, 101);
+        try expectEqualStrings(error_data.message, "too high");
+        return;
+    };
+    unreachable;
+}
+
+test "error with associated data #3" {
+    var error_data: ErrorData = undefined;
+    const result = process(2, &error_data) catch {
+        unreachable;
+    };
+    try expectEqual(result, 4);
 }
