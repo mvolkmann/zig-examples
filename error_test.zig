@@ -99,7 +99,7 @@ fn process(number: i32, error_out: *ErrorData) EvalError!i32 {
     return number * 2;
 }
 
-test "error with associated data #1" {
+test "negative error" {
     var error_data: ErrorData = undefined;
     _ = process(-1, &error_data) catch {
         try expectEqual(error_data.value, -1);
@@ -109,7 +109,7 @@ test "error with associated data #1" {
     unreachable;
 }
 
-test "error with associated data #2" {
+test "too high error" {
     var error_data: ErrorData = undefined;
     _ = process(101, &error_data) catch {
         try expectEqual(error_data.value, 101);
@@ -119,7 +119,7 @@ test "error with associated data #2" {
     unreachable;
 }
 
-test "error with associated data #3" {
+test "success" {
     var error_data: ErrorData = undefined;
     const result = process(2, &error_data) catch {
         unreachable;
