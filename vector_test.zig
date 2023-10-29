@@ -14,11 +14,11 @@ test "vectors" {
     try expectEqual(v1[1], 2.3);
     try expectEqual(v1[2], 3.4);
 
-    // Can create a vector from an array.
+    // Can create a vector from an array or slice with assignment.
     const arr1 = [_]f32{ 1.2, 2.3, 3.4 };
     const vFromArr: @Vector(3, f32) = arr1;
 
-    // Can create array from vector.
+    // Can create an array from a vector with assignment.
     const arr2: [3]f32 = vFromArr;
     try expectEqual(arr1, arr2);
 
