@@ -64,7 +64,7 @@ fn translate(pt: *Point, dx: f32, dy: f32) void {
 }
 
 test "Point struct" {
-    try expectEqual(Point.dimensions, 2);
+    try expectEqual(Point.dimensions, 2); // constant value
 
     var p1 = Point{}; // uses default values for x and y
     try expectEqual(p1.x, 1);
