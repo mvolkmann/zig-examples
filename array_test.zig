@@ -29,6 +29,7 @@ test "arrays" {
     const subset = dice_rolls[2..4];
     var expected_subset = [_]u8{ 6, 1 };
     try expectEqualSlices(u8, &expected_subset, subset);
+    assert(std.mem.eql(u8, &expected_subset, subset));
 
     // Modify array items in-place.
     for (&dice_rolls) |*roll| {
