@@ -15,3 +15,12 @@ test "underscores" {
     const n = 1_234.567_89;
     try expectEqual(n, 1234.56789);
 }
+
+pub fn main() !void {
+    print();
+    std.math.inf
+    std.math.isNan
+    std.math.isNegativeInf
+    std.math.isPositiveInf
+    
+}
