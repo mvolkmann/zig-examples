@@ -11,6 +11,7 @@ test "arrays" {
     // Create a mutable array so it can be modified later.
     var dice_rolls = [_]u8{ 4, 2, 6, 1, 2 };
     try expectEqual(dice_rolls.len, 5);
+    try expectEqual(@TypeOf(dice_rolls.len), usize);
 
     // Use a for loop to iterate over the items in an array or slice.
     // A for loop can iterate over multiple arrays at the same time.
