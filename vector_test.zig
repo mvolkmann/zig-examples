@@ -1,4 +1,5 @@
 const std = @import("std");
+const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 
 test "vectors" {
@@ -50,3 +51,9 @@ test "vectors" {
     try expectEqual(@reduce(.Min, v1), 1.2);
     try expectEqual(@reduce(.Max, v1), 3.4);
 }
+
+// This does not work!
+// test "has SIMD" {
+//     const target = try std.zig.system.NativeTargetInfo.detect(.{});
+//     try expect(std.Target.arm.featureSetHas(target.target.cpu.features, .sha));
+// }
