@@ -7,41 +7,67 @@ const String = []const u8;
 // Each thread has its own instance of this variable.
 threadlocal var x: i32 = 1;
 
-fn process(i: u8, message: String) !void {
+fn process(i: u8, wg: ?*Thread.WaitGroup) !void {
+    print("process: i = {}\n", .{i});
     // print("process: running in thread {}\n", .{ currentThread.getName() });
-    print("process: i = {}, message = {s}\n", .{ i, message });
     try expectEqual(x, 1);
     // Can call thread.yield() to suspend this thread
     // and allow another thread to run.
     x += 1;
     try expectEqual(x, 2);
+    if (wg) |group| group.finish();
 }
 
-test "thread local storage" {
-    print("CPU count = {}\n", .{Thread.getCpuCount()});
-    const threadCount = 3;
-    var threads: [threadCount]Thread = undefined;
-
-    var group = Thread.WaitGroup;
+test "threads with join" {
+    const cpu_count = try Thread.getCpuCount();
+    print("CPU count = {}\n", .{cpu_count});
 
     var i: u8 = 0;
-    while (i < threadCount) : (i += 1) {
+    while (i < cpu_count - 1) : (i += 1) {
+        print("i = {}\n", .{i});
         // The first argument to spawn is a SpawnConfig object
         // that can have stack_size (defaults to 16MB)
         // and allocator (defaults to null) fields.
         // The second argument is the function to run in the thread.
         // The third argument is a tuple of arguments to pass to the function.
-        const thread = try Thread.spawn(.{}, process, .{ i + 1, "thread" });
-        thread.setName("t" ++ @as(String, i));
-        group.add(thread);
+        const thread = try Thread.spawn(.{}, process, .{ i, null });
+        var buffer: [10]u8 = undefined;
+        const name = try std.fmt.bufPrint(&buffer, "t{}", .{i});
+        print("name = {s}\n", .{name});
+        try thread.setName(name);
 
-        // How can you add a Thread to a WaitGroup
-        // so you can wait for the whole group to finish?
         // Must either call join or detach on each thread.
         thread.join(); // waits for thread to end
-
-        threads[i] = thread;
     }
 
-    try process(0, "main"); // runs in main thread
+    // try process(0, "main"); // runs in main thread
+
+    print("all threads finished\n", .{});
+}
+
+test "threads with WaitGroup" {
+    const cpu_count = try Thread.getCpuCount();
+    print("CPU count = {}\n", .{cpu_count});
+
+    var wg: Thread.WaitGroup = .{};
+
+    var i: u8 = 0;
+    while (i < cpu_count - 1) : (i += 1) {
+        print("i = {}\n", .{i});
+        wg.start();
+        const thread = try Thread.spawn(.{}, process, .{ i, &wg });
+        var buffer: [10]u8 = undefined;
+        const name = try std.fmt.bufPrint(&buffer, "t{}", .{i});
+        print("name = {s}\n", .{name});
+        try thread.setName(name);
+
+        // Must either call join or detach on each thread.
+        thread.detach(); // use with WaitGroup
+    }
+
+    // try process(0, "main"); // runs in main thread
+
+    wg.wait(); // wait for all threads in the WaitGroup to finish
+    wg.reset(); // needed?
+    print("all threads finished\n", .{});
 }
