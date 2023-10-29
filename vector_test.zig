@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 
@@ -52,8 +53,14 @@ test "vectors" {
     try expectEqual(@reduce(.Max, v1), 3.4);
 }
 
-// This does not work!
-// test "has SIMD" {
-//     const target = try std.zig.system.NativeTargetInfo.detect(.{});
-//     try expect(std.Target.arm.featureSetHas(target.target.cpu.features, .sha));
-// }
+test "has SIMD" {
+    // Typically code logic doesn't depend on CPU-specific features.
+    // @Vector is CPU independent outside of the
+    // number of elements that can be processed simultaneously.
+    const target = try std.zig.system.NativeTargetInfo.detect(.{});
+    const cpu = target.target.cpu;
+    // This assumes that the target is an ARM processor
+    // such as Apple's M processors.
+    // Apple calls their SIMD feature Neon.
+    try expect(std.Target.arm.featureSetHas(cpu.features, .neon));
+}
