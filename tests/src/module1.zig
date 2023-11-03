@@ -7,5 +7,5 @@ pub fn first() void {
 }
 
 test "first" {
-    expectEqual(1, 1);
+    try expectEqual(1, 1);
 }

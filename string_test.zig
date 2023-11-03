@@ -1,5 +1,7 @@
 const std = @import("std");
+const print = std.debug.print;
 const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const expectStringEndsWith = std.testing.expectStringEndsWith;
 const expectStringStartsWith = std.testing.expectStringStartsWith;
@@ -122,5 +124,12 @@ test "tokenize" {
     while (iter3.next()) |color| {
         try expectEqualStrings(expected[index], color);
         index += 1;
+    }
+}
+
+test "iterate over characters" {
+    const text = "Hello";
+    for (text, 0..) |letter, index| {
+        try expectEqual(text[index], letter);
     }
 }

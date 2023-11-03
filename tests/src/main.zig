@@ -6,3 +6,7 @@ pub fn main() !void {
     m1.first();
     m2.second();
 }
+
+test {
+    std.testing.refAllDecls(@This());
+}

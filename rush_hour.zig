@@ -5,13 +5,18 @@
 // use a heuristic function to select the next node to evaluate.
 
 const std = @import("std");
+const print = std.debug.print;
 const bufPrint = std.fmt.bufPrint;
+const math = std.math;
+const expectEqualStrings = std.testing.expectEqualStrings;
+
 var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
 const allocator = gpa.allocator();
+
 const stdout = std.io.getStdOut();
-const math = std.math;
-const CarMap = std.AutoArrayHashMap(u8, Car);
 const sow = stdout.writer();
+
+const CarMap = std.AutoArrayHashMap(u8, Car);
 
 const EXIT_ROW = 2;
 const MAX_CARS = 16;
@@ -231,7 +236,7 @@ fn contains(string: String, char: u8) bool {
     return false;
 }
 
-// This makes a deep copy of a board array.
+// This makes a deep copy of a board.
 fn copyBoard(board: Board) Board {
     const copy = [6]String{};
     for (board, 0..) |row, index| {
@@ -242,7 +247,8 @@ fn copyBoard(board: Board) Board {
 
 fn createMove(letter: u8, direction: String, distance: u8) !String {
     var buffer: [20]u8 = undefined;
-    return try bufPrint(&buffer, "{} {} {}", .{ letter, direction, distance });
+    const result = try bufPrint(&buffer, "{c} {s} {d}", .{ letter, direction, distance });
+    return allocator.dupe(u8, result);
 }
 
 // This creates a 2D array of car letters for a given puzzle.
@@ -355,13 +361,8 @@ inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
 }
 
-fn print(string: String) void {
-    // This ignores errors.
-    sow.print("{s}\n", .{string}) catch {};
-}
-
 fn printBoard(board: Board) !void {
-    print(BORDER);
+    printStdOut(BORDER);
     for (board, 0..) |row, index| {
         var buffer: [16]u8 = undefined;
         defer allocator.free(buffer);
@@ -376,7 +377,7 @@ fn printBoard(board: Board) !void {
         }
         print(fbs.getWritten());
     }
-    print(BORDER);
+    printStdOut(BORDER);
 }
 
 fn printMoves(lastState: State) void {
@@ -395,6 +396,11 @@ fn printMoves(lastState: State) void {
     while (i >= 0) : (i -= 1) {
         print(moves[i]);
     }
+}
+
+fn printStdOut(string: String) void {
+    // This ignores errors.
+    sow.print("{s}\n", .{string}) catch {};
 }
 
 // This sets the board letter used in a range of rows for a given column.
