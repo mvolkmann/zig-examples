@@ -25,8 +25,9 @@ const Car = struct {
 
 const CarMap = std.AutoHashMap(u8, Car);
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
-const allocator = gpa.allocator();
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
+// const allocator = gpa.allocator();
+const allocator = std.testing.allocator;
 
 // This makes a deep copy of a board.
 fn copyBoard(board: Board) !Board {
