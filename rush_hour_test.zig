@@ -25,6 +25,7 @@ const Car = struct {
 
 const CarMap = std.AutoHashMap(u8, Car);
 
+// Need to use std.testing.allocator to detect memory leaks.
 // var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
 // const allocator = gpa.allocator();
 const allocator = std.testing.allocator;
@@ -36,7 +37,8 @@ fn copyBoard(board: Board) !Board {
 }
 
 test copyBoard {
-    const puzzle = try getPuzzle();
+    var puzzle = try getPuzzle();
+    defer puzzle.deinit();
     const board = try getBoard(puzzle);
     const copy = try copyBoard(board);
     try expect(&copy != &board);
@@ -77,6 +79,7 @@ fn createMove(letter: u8, direction: String, distance: u8) !String {
 
 test createMove {
     const move = try createMove('A', "left", 3);
+    defer allocator.free(move);
     try expectEqualStrings("A left 3", move);
 }
 
@@ -90,8 +93,10 @@ fn getBoard(cars: CarMap) !Board {
     // var board: [SIZE][SIZE]u8 = .{.{' '} ** SIZE} ** SIZE;
     var board: Board = .{.{' '} ** SIZE} ** SIZE;
 
-    // Add cars to the board.
     const letters = try getLetters(cars);
+    defer allocator.free(letters);
+
+    // Add cars to the board.
     for (letters) |letter| {
         if (cars.get(letter)) |car| {
             const length = carLength(letter);
@@ -137,7 +142,8 @@ fn getBoard(cars: CarMap) !Board {
 }
 
 test getBoard {
-    const puzzle = try getPuzzle();
+    var puzzle = try getPuzzle();
+    defer puzzle.deinit();
     const board = try getBoard(puzzle);
     const expected = [_]String{
         "AA   O",
@@ -166,14 +172,15 @@ fn getLetters(cars: CarMap) ![]u8 {
 }
 
 test getLetters {
-    const puzzle = try getPuzzle();
+    var puzzle = try getPuzzle();
+    defer puzzle.deinit();
     const letters = try getLetters(puzzle);
+    defer allocator.free(letters);
     try expectEqualStrings("RPXACQOB", letters);
 }
 
 fn getPuzzle() !CarMap {
     var puzzle = CarMap.init(allocator);
-    // defer puzzle.deinit();
 
     // Can these puts be performed at compile-time?
     try puzzle.put('A', .{ .row = 0, .currentColumn = 0 });
@@ -226,7 +233,8 @@ test printBoard {
     var fbs = std.io.fixedBufferStream(&buffer);
     var writer = fbs.writer();
 
-    const puzzle = try getPuzzle();
+    var puzzle = try getPuzzle();
+    defer puzzle.deinit();
     const board = try getBoard(puzzle);
     try printBoard(writer, board);
 
