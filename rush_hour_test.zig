@@ -1,21 +1,20 @@
 const std = @import("std");
 const print = std.debug.print;
-const bufPrint = std.fmt.bufPrint;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
+const expectEqualSlices = std.testing.expectEqualSlices;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 const EXIT_ROW = 2;
-const MAX_CARS = 16;
 const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" ++ ("-" ** (SIZE * 2 + 1)) ++ "+";
-const SPACE = ' ';
 
 const stdout = std.io.getStdOut();
 const sow = stdout.writer();
 
 const String = []const u8;
-const Board = ArrayList(String);
+const Row = [SIZE]u8;
+const Board = [SIZE]Row;
 
 const Car = struct {
     row: ?u8 = undefined,
@@ -31,10 +30,7 @@ const allocator = gpa.allocator();
 
 // This makes a deep copy of a board.
 fn copyBoard(board: Board) !Board {
-    var copy: [SIZE]String = undefined;
-    for (board.items, 0..) |row, index| {
-        copy[index] = try allocator.dupe(u8, row);
-    }
+    var copy: Board = board;
     return copy;
 }
 
@@ -42,24 +38,10 @@ test copyBoard {
     const puzzle = try getPuzzle();
     const board = try getBoard(puzzle);
     const copy = try copyBoard(board);
-    try expectEqual(board, copy);
-}
-
-fn getPuzzle() !CarMap {
-    var puzzle = CarMap.init(allocator);
-    // defer puzzle.deinit();
-
-    // Can these puts be performed at compile-time?
-    try puzzle.put('A', .{ .row = 0, .currentColumn = 0 });
-    try puzzle.put('B', .{ .column = 0, .currentRow = 4 });
-    try puzzle.put('C', .{ .row = 4, .currentColumn = 4 });
-    try puzzle.put('O', .{ .column = 5, .currentRow = 0 });
-    try puzzle.put('P', .{ .column = 0, .currentRow = 1 });
-    try puzzle.put('Q', .{ .column = 3, .currentRow = 1 });
-    try puzzle.put('R', .{ .row = 5, .currentColumn = 2 });
-    try puzzle.put('X', .{ .row = EXIT_ROW, .currentColumn = 1 });
-
-    return puzzle;
+    try expect(&copy != &board);
+    try expect(&copy[0] != &board[0]);
+    try expectEqualSlices(u8, &board[0], &copy[0]);
+    try expectEqualSlices(Row, &board, &copy);
 }
 
 fn carLength(letter: u8) u8 {
@@ -103,14 +85,9 @@ fn getBoard(cars: CarMap) !Board {
         @panic("Puzzle is missing car X!");
     }
 
-    var board = try Board.initCapacity(allocator, SIZE);
-    //TODO: Caller will need to deinit this.
-
     // Create an empty board.
-    for (0..SIZE) |_| {
-        const boardRow = [_]u8{SPACE} ** SIZE;
-        try board.append(&boardRow);
-    }
+    // var board: [SIZE][SIZE]u8 = .{.{' '} ** SIZE} ** SIZE;
+    var board: Board = .{.{' '} ** SIZE} ** SIZE;
 
     // Add cars to the board.
     const letters = try getLetters(cars);
@@ -122,25 +99,17 @@ fn getBoard(cars: CarMap) !Board {
                 if (car.currentColumn) |start| {
                     const end = start + length;
                     if (car.row) |row| {
-                        var boardRow = board.items[row];
-                        var newBoardRow = try allocator.dupe(u8, boardRow);
+                        var boardRow = &board[row];
                         for (start..end) |column| {
                             // Check if another car already occupies this cell.
                             // If so then there is a error in the puzzle description.
                             const existing = boardRow[column];
-                            if (existing != SPACE) {
-                                var buffer: [20]u8 = undefined;
-                                const message = bufPrint(
-                                    &buffer,
-                                    "Car {} overlaps car {}",
-                                    .{ letter, existing },
-                                ) catch @panic("bufPrint failed");
-                                @panic(message);
+                            if (existing != ' ') {
+                                try overlapPanic(letter, existing);
                             }
 
-                            newBoardRow[column] = letter;
+                            boardRow[column] = letter;
                         }
-                        board.items[row] = newBoardRow;
                     }
                 }
             } else if (car.currentRow) |start| { // should always be defined
@@ -148,21 +117,16 @@ fn getBoard(cars: CarMap) !Board {
                 const column = car.column orelse 0; // should always be defined
                 const end = start + length;
                 for (start..end) |row| {
-                    const boardRow = board.items[row];
+                    var boardRow = &board[row];
 
                     // Check if another car already occupies this cell.
                     // If so then there is a error in the puzzle description.
                     const existing = boardRow[column];
-                    if (existing != SPACE) {
-                        const temp1 = [_]u8{letter};
-                        const temp2 = [_]u8{existing};
-                        @panic("Car " ++ temp1 ++ " overlaps car " ++ temp2 ++ "!");
+                    if (existing != ' ') {
+                        try overlapPanic(letter, existing);
                     }
 
-                    //TODO: Is this the best way to update one character in a string inside an ArrayList?
-                    var newBoardRow = try allocator.dupe(u8, boardRow);
-                    newBoardRow[column] = letter;
-                    board.items[row] = newBoardRow;
+                    boardRow[column] = letter;
                 }
             }
         }
@@ -183,8 +147,8 @@ test getBoard {
         "B RRR ",
     };
 
-    for (board.items, 0..) |row, index| {
-        try expectEqualStrings(expected[index], row);
+    for (board, 0..) |row, index| {
+        try expectEqualStrings(expected[index], &row);
     }
 }
 
@@ -206,6 +170,23 @@ test getLetters {
     try expectEqualStrings("RPXACQOB", letters);
 }
 
+fn getPuzzle() !CarMap {
+    var puzzle = CarMap.init(allocator);
+    // defer puzzle.deinit();
+
+    // Can these puts be performed at compile-time?
+    try puzzle.put('A', .{ .row = 0, .currentColumn = 0 });
+    try puzzle.put('B', .{ .column = 0, .currentRow = 4 });
+    try puzzle.put('C', .{ .row = 4, .currentColumn = 4 });
+    try puzzle.put('O', .{ .column = 5, .currentRow = 0 });
+    try puzzle.put('P', .{ .column = 0, .currentRow = 1 });
+    try puzzle.put('Q', .{ .column = 3, .currentRow = 1 });
+    try puzzle.put('R', .{ .row = 5, .currentColumn = 2 });
+    try puzzle.put('X', .{ .row = EXIT_ROW, .currentColumn = 1 });
+
+    return puzzle;
+}
+
 inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
 }
@@ -217,25 +198,22 @@ test isHorizontal {
     try expect(!isHorizontal(car));
 }
 
+fn overlapPanic(letter: u8, existing: u8) !void {
+    const message = try std.fmt.allocPrint(
+        allocator,
+        "Car {c} overlaps car {c}!",
+        .{ letter, existing },
+    );
+    @panic(message);
+}
+
 fn printBoard(writer: anytype, board: Board) !void {
     println(writer, BORDER);
-    for (board.items, 0..) |row, index| {
-        _ = index;
-        // var buffer: [16]u8 = undefined;
-        // defer allocator.free(buffer);
-        // var fbs = std.io.fixedBufferStream(&buffer);
-        // const writer = fbs.writer();
-        // _ = try writer.write("| ");
-        // // for (row) |letter| {
-        // //     try writer.print("{} ", .{letter});
-        // // }
-        // if (index != EXIT_ROW) {
-        //     _ = try writer.write("|");
-        // }
-        // printString(fbs.getWritten());
+    for (board) |row| {
         printString(writer, "|");
         for (row) |letter| {
-            try writer.print(" {c}", .{letter});
+            const char = if (letter == 0) ' ' else letter;
+            try writer.print(" {c}", .{char});
         }
         println(writer, " |");
     }

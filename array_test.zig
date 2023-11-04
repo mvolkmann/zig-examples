@@ -61,6 +61,8 @@ test "multi-dimensional array" {
     const row_index = 1;
     const column_index = 2;
     try expectEqual(matrix[row_index][column_index], 6.0);
+    matrix[row_index][column_index] = 42.0;
+    try expectEqual(matrix[row_index][column_index], 42.0);
 
     for (matrix) |row| {
         print("\n", .{});
@@ -68,6 +70,15 @@ test "multi-dimensional array" {
             print("{} ", .{value});
         }
     }
+
+    // Initialize a two-dimensional array to all zeroes.
+    var m2 = std.mem.zeroes([3][3]u8);
+    try expectEqual(m2[0][0], 0);
+    m2[1][2] = 19;
+    try expectEqual(m2[1][2], 19);
+    var row = &m2[1]; // note need to get a pointer
+    row[2] = 20;
+    try expectEqual(m2[1][2], 20);
 }
 
 fn double(n: u8) u8 {
