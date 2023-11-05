@@ -355,3 +355,46 @@ fn println(writer: anytype, string: String) void {
     // This ignores errors.
     writer.print("{s}\n", .{string}) catch {};
 }
+
+// This sets the board letter used in a range of rows for a given column.
+fn setColumn(board: Board, letter: u8, column: u8, startRow: u8, length: u8) void {
+    for (startRow..startRow + length) |row| {
+        board[row][column] = letter;
+    }
+}
+
+// test setColumn {
+//     const puzzle = try getPuzzle();
+//     defer {
+//         var puzzle_mut = puzzle;
+//         puzzle_mut.deinit();
+//     }
+
+//     var board = try getBoard(puzzle);
+//     const letter = 'A';
+//     setColumn(board, letter, 3, 1, 2);
+//     try expectEqual(letter, board[1][3]);
+//     try expectEqual(letter, board[2][3]);
+// }
+
+// This sets the board letter used in a range of columns for a given row.
+fn setRow(boardRow: String, letter: u8, startColumn: u8, length: u8) void {
+    for (startColumn..startColumn + length) |column| {
+        boardRow[column] = letter;
+    }
+}
+
+test setRow {
+    const puzzle = try getPuzzle();
+    defer {
+        var puzzle_mut = puzzle;
+        puzzle_mut.deinit();
+    }
+
+    var board = try getBoard(puzzle);
+    const boardRow = board[3];
+    const letter = 'A';
+    setRow(&boardRow, letter, 1, 2);
+    try expectEqual(letter, board[3][1]);
+    try expectEqual(letter, board[3][2]);
+}
