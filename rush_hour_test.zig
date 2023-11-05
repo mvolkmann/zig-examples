@@ -6,6 +6,7 @@ const expectEqualSlices = std.testing.expectEqualSlices;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 const EXIT_ROW = 2;
+const MAX_CARS = 16;
 const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" ++ ("-" ** (SIZE * 2 + 1)) ++ "+";
 
@@ -25,10 +26,38 @@ const Car = struct {
 
 const CarMap = std.AutoHashMap(u8, Car);
 
+const State = struct {
+    move: ?String,
+    cars: CarMap, // keys are letters and values are Car structs
+    board: Board,
+    previousState: ?*State,
+};
+
 // Need to use std.testing.allocator to detect memory leaks.
 // var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
 // const allocator = gpa.allocator();
 const allocator = std.testing.allocator;
+
+fn carLength(letter: u8) u8 {
+    return if (contains("OPQR", letter)) 3 else 2;
+}
+
+test carLength {
+    try expectEqual(carLength('A'), 2);
+    try expectEqual(carLength('P'), 3);
+}
+
+fn contains(string: String, char: u8) bool {
+    for (string) |item| {
+        if (item == char) return true;
+    }
+    return false;
+}
+
+test contains {
+    try expect(contains("Hello", 'e'));
+    try expect(!contains("Hello", 'x'));
+}
 
 // This makes a deep copy of a board.
 fn copyBoard(board: Board) !Board {
@@ -50,27 +79,6 @@ test copyBoard {
     try expect(&copy[0] != &board[0]);
     try expectEqualSlices(u8, &board[0], &copy[0]);
     try expectEqualSlices(Row, &board, &copy);
-}
-
-fn carLength(letter: u8) u8 {
-    return if (contains("OPQR", letter)) 3 else 2;
-}
-
-test carLength {
-    try expectEqual(carLength('A'), 2);
-    try expectEqual(carLength('P'), 3);
-}
-
-fn contains(string: String, char: u8) bool {
-    for (string) |item| {
-        if (item == char) return true;
-    }
-    return false;
-}
-
-test contains {
-    try expect(contains("Hello", 'e'));
-    try expect(!contains("Hello", 'x'));
 }
 
 fn createMove(letter: u8, direction: String, distance: u8) !String {
@@ -147,8 +155,12 @@ fn getBoard(cars: CarMap) !Board {
 }
 
 test getBoard {
-    var puzzle = try getPuzzle();
-    defer puzzle.deinit();
+    const puzzle = try getPuzzle();
+    defer {
+        var puzzle_mut = puzzle;
+        puzzle_mut.deinit();
+    }
+
     const board = try getBoard(puzzle);
     const expected = [_]String{
         "AA   O",
@@ -177,8 +189,11 @@ fn getLetters(cars: CarMap) ![]u8 {
 }
 
 test getLetters {
-    var puzzle = try getPuzzle();
-    defer puzzle.deinit();
+    const puzzle = try getPuzzle();
+    defer {
+        var puzzle_mut = puzzle;
+        puzzle_mut.deinit();
+    }
     const letters = try getLetters(puzzle);
     defer allocator.free(letters);
     try expectEqualStrings("RPXACQOB", letters);
@@ -199,6 +214,24 @@ fn getPuzzle() !CarMap {
 
     return puzzle;
 }
+
+// This returns a string that uniquely describes a board state,
+// but only for the current puzzle.
+// We only need the current row or column for each car
+// as a string of numbers from 0 to 5.
+fn getStateId(cars: CarMap) String {
+    var positionsArray: [MAX_CARS]String = undefined;
+    var positionsSlice = positionsArray[0..cars.count()];
+    // This assumes that the order of the cars returned never changes.
+    for (cars.values(), 0..) |car, i| {
+        positionsSlice[i] = car.currentRow orelse car.currentColumn;
+    }
+    const joined = try std.mem.join(allocator, "", positionsSlice);
+    defer allocator.free(joined);
+    return joined;
+}
+
+test getStateId {}
 
 inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
@@ -238,8 +271,12 @@ test printBoard {
     var fbs = std.io.fixedBufferStream(&buffer);
     var writer = fbs.writer();
 
-    var puzzle = try getPuzzle();
-    defer puzzle.deinit();
+    const puzzle = try getPuzzle();
+    defer {
+        var puzzle_mut = puzzle;
+        puzzle_mut.deinit();
+    }
+
     const board = try getBoard(puzzle);
     try printBoard(writer, board);
 
