@@ -39,6 +39,11 @@ const State = struct {
 // const allocator = gpa.allocator();
 const allocator = std.testing.allocator;
 
+// NEED addHorizontalMoves function.
+// NEED addVerticalMoves function.
+// NEED addMoves function.
+// NEED addPendingState function.
+
 fn carLength(letter: u8) u8 {
     return if (contains("OPQR", letter)) 3 else 2;
 }
@@ -327,6 +332,8 @@ fn printChar(writer: anytype, char: u8) void {
     writer.print("{c} ", .{char}) catch {};
 }
 
+// NEED printMoves function.
+
 fn printString(writer: anytype, string: String) void {
     // This ignores errors.
     writer.print("{s}", .{string}) catch {};
@@ -379,3 +386,7 @@ test setRow {
     try expectEqual(board[row][startColumn], letter);
     try expectEqual(board[row][startColumn + 1], letter);
 }
+
+// NEED solve function.
+
+// NEED main function.
