@@ -338,27 +338,30 @@ fn println(writer: anytype, string: String) void {
 }
 
 // This sets the board letter used in a range of rows for a given column.
-fn setColumn(board: Board, letter: u8, column: u8, startRow: u8, length: u8) void {
+fn setColumn(board: anytype, column: u8, startRow: u8, length: u8, letter: u8) void {
     for (startRow..startRow + length) |row| {
         board[row][column] = letter;
     }
 }
 
-// test setColumn {
-//     const puzzle = try getPuzzle();
-//     defer puzzle.deinit();
-//
-//     var board = try getBoard(puzzle);
-//     const letter = 'A';
-//     setColumn(board, letter, 3, 1, 2);
-//     try expectEqual(letter, board[1][3]);
-//     try expectEqual(letter, board[2][3]);
-// }
+test setColumn {
+    var puzzle = try getPuzzle();
+    defer puzzle.deinit();
 
-// This sets the board letter used in a range of columns for a given row.
-fn setRow(boardRow: String, letter: u8, startColumn: u8, length: u8) void {
+    var board = try getBoard(puzzle);
+
+    const column = 3;
+    const startRow = 1;
+    const length = 2;
+    const letter = 'A';
+    setColumn(&board, column, startRow, length, letter);
+    try expectEqual(board[startRow][column], letter);
+    try expectEqual(board[startRow + 1][column], letter);
+}
+
+fn setRow(board: anytype, row: u8, startColumn: u8, length: u8, letter: u8) void {
     for (startColumn..startColumn + length) |column| {
-        boardRow[column] = letter;
+        board[row][column] = letter;
     }
 }
 
@@ -366,10 +369,13 @@ test setRow {
     var puzzle = try getPuzzle();
     defer puzzle.deinit();
 
-    // var board = try getBoard(puzzle);
-    // const boardRow = board[3];
-    // const letter = 'A';
-    // setRow(&boardRow, letter, 1, 2);
-    // try expectEqual(letter, board[3][1]);
-    // try expectEqual(letter, board[3][2]);
+    var board = try getBoard(puzzle);
+
+    const row = 3;
+    const startColumn = 1;
+    const length = 2;
+    const letter = 'A';
+    setRow(&board, row, startColumn, length, letter);
+    try expectEqual(board[row][startColumn], letter);
+    try expectEqual(board[row][startColumn + 1], letter);
 }

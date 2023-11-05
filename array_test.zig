@@ -201,3 +201,31 @@ test reduce {
     const sum = reduce(u8, u8, &numbers, add, 0);
     try expectEqual(sum, 6);
 }
+
+fn set1D(arr: []u8, index: usize, value: u8) void {
+    arr[index] = value;
+}
+
+test set1D {
+    var numbers = [_]u8{ 1, 2, 3 };
+    set1D(&numbers, 1, 4);
+    try expectEqual(numbers[1], 4);
+}
+
+// Note the need for the type of arr to be anytype rather than [][]u8.
+fn set2D(arr: anytype, row: usize, col: usize, value: u8) void {
+    arr[row][col] = value;
+}
+
+test set2D {
+    var matrix = [3][3]u8{
+        [_]u8{ 1, 2, 3 },
+        [_]u8{ 4, 5, 6 },
+        [_]u8{ 7, 8, 9 },
+    };
+    const row = 1;
+    const col = 1;
+    const val = 10;
+    set2D(&matrix, row, col, val);
+    try expectEqual(matrix[row][col], val);
+}
