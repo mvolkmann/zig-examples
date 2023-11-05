@@ -37,8 +37,13 @@ fn copyBoard(board: Board) !Board {
 }
 
 test copyBoard {
-    var puzzle = try getPuzzle();
-    defer puzzle.deinit();
+    const puzzle = try getPuzzle();
+    defer {
+        // We can't deinit a const HashMap.  A workaround is
+        // to make a shallow, mutable copy and deinit that.
+        var puzzle_mut = puzzle;
+        puzzle_mut.deinit();
+    }
     const board = try getBoard(puzzle);
     const copy = try copyBoard(board);
     try expect(&copy != &board);
