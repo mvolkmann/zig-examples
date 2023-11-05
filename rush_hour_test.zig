@@ -5,10 +5,11 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
-const EXIT_ROW = 2;
-const MAX_CARS = 16;
 const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" ++ ("-" ** (SIZE * 2 + 1)) ++ "+";
+const EXIT_ROW = 2;
+const MAX_CARS = 16;
+const SPACE = ' ';
 
 const stdout = std.io.getStdOut();
 const sow = stdout.writer();
@@ -103,8 +104,7 @@ fn getBoard(cars: CarMap) !Board {
     }
 
     // Create an empty board.
-    // var board: [SIZE][SIZE]u8 = .{.{' '} ** SIZE} ** SIZE;
-    var board: Board = .{.{' '} ** SIZE} ** SIZE;
+    var board: Board = .{.{SPACE} ** SIZE} ** SIZE;
 
     const letters = try getLetters(cars);
     defer allocator.free(letters);
@@ -123,7 +123,7 @@ fn getBoard(cars: CarMap) !Board {
                             // Check if another car already occupies this cell.
                             // If so then there is a error in the puzzle description.
                             const existing = boardRow[column];
-                            if (existing != ' ') {
+                            if (existing != SPACE) {
                                 try overlapPanic(letter, existing);
                             }
 
@@ -141,7 +141,7 @@ fn getBoard(cars: CarMap) !Board {
                     // Check if another car already occupies this cell.
                     // If so then there is a error in the puzzle description.
                     const existing = boardRow[column];
-                    if (existing != ' ') {
+                    if (existing != SPACE) {
                         try overlapPanic(letter, existing);
                     }
 
@@ -244,6 +244,41 @@ test getStateId {
     try expectEqualStrings("21104104", stateId);
 }
 
+// The goal is reached when there are no cars blocking the X car from the exit.
+fn isGoalReached(board: Board, cars: CarMap) bool {
+    // Get the column after the end of the X car.
+    // This assumes the X car length is 2.
+    if (cars.get('X')) |car| {
+        if (car.currentColumn) |currentColumn| {
+            const startColumn = currentColumn + 2;
+            const exitRow = board[EXIT_ROW];
+
+            // Check for cars blocking the exit.
+            for (startColumn..SIZE) |column| {
+                if (exitRow[column] != SPACE) return false;
+            }
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
+test isGoalReached {
+    const puzzle = try getPuzzle();
+    defer {
+        var puzzle_mut = puzzle;
+        puzzle_mut.deinit();
+    }
+
+    const board = try getBoard(puzzle);
+    try expect(!isGoalReached(board, puzzle));
+
+    //TODO: Add a test where the goal IS reached.
+}
+
 inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
 }
@@ -269,7 +304,7 @@ fn printBoard(writer: anytype, board: Board) !void {
     for (board) |row| {
         printString(writer, "|");
         for (row) |letter| {
-            const char = if (letter == 0) ' ' else letter;
+            const char = if (letter == 0) SPACE else letter;
             try writer.print(" {c}", .{char});
         }
         println(writer, " |");
