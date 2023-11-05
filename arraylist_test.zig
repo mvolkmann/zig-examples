@@ -43,3 +43,19 @@ test "ArrayList" {
     list.clearAndFree();
     try expectEqual(list.items.len, 0);
 }
+
+const StringList = std.ArrayList(String);
+
+fn getList() !StringList {
+    var list = StringList.init(allocator);
+    try list.append("red");
+    try list.append("green");
+    try list.append("blue");
+    return list;
+}
+
+test "ArrayList deinit" {
+    const list = try getList();
+    defer list.deinit(); // list can be const
+    try expectEqual(list.items.len, 3);
+}

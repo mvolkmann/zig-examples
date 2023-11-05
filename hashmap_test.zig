@@ -162,3 +162,28 @@ test "StringHashMap" {
     try expect(removed);
     try expectEqual(@as(?u8, null), map.get("Gretzky"));
 }
+
+const StringToU8Map = std.StringHashMap(u8);
+fn getMap() !StringToU8Map {
+    var map = StringToU8Map.init(allocator);
+
+    try map.put("Gretzky", 99);
+    try map.put("Orr", 4);
+    try map.put("Ratelle", 19);
+    return map;
+}
+
+test "HashMap deinit" {
+    // Approach #1: mutable map
+    // var map = try getMap();
+    // defer map.deinit(); // map cannot be const
+
+    // Approach #2: immutable map
+    const map = try getMap();
+    defer {
+        var mutable = map;
+        mutable.deinit();
+    }
+
+    try expectEqual(map.count(), 3);
+}
