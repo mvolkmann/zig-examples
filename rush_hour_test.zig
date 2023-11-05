@@ -194,6 +194,7 @@ test getLetters {
         var puzzle_mut = puzzle;
         puzzle_mut.deinit();
     }
+
     const letters = try getLetters(puzzle);
     defer allocator.free(letters);
     try expectEqualStrings("RPXACQOB", letters);
@@ -220,18 +221,28 @@ fn getPuzzle() !CarMap {
 // We only need the current row or column for each car
 // as a string of numbers from 0 to 5.
 fn getStateId(cars: CarMap) String {
-    var positionsArray: [MAX_CARS]String = undefined;
-    var positionsSlice = positionsArray[0..cars.count()];
+    var positions: [MAX_CARS]u8 = undefined;
     // This assumes that the order of the cars returned never changes.
-    for (cars.values(), 0..) |car, i| {
-        positionsSlice[i] = car.currentRow orelse car.currentColumn;
+    var iter = cars.valueIterator();
+    var i: u8 = 0;
+    while (iter.next()) |car| {
+        const number = car.currentRow orelse car.currentColumn orelse 0;
+        positions[i] = number + 48; // converts to ASCII
+        i += 1;
     }
-    const joined = try std.mem.join(allocator, "", positionsSlice);
-    defer allocator.free(joined);
-    return joined;
+    return positions[0..i];
 }
 
-test getStateId {}
+test getStateId {
+    const puzzle = try getPuzzle();
+    defer {
+        var puzzle_mut = puzzle;
+        puzzle_mut.deinit();
+    }
+
+    const stateId = getStateId(puzzle);
+    try expectEqualStrings("21104104", stateId);
+}
 
 inline fn isHorizontal(car: Car) bool {
     return car.row != undefined;
