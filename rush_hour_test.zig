@@ -39,10 +39,52 @@ const State = struct {
 // const allocator = gpa.allocator();
 const allocator = std.testing.allocator;
 
+// These objects describe states that still need to be evaluated
+// and will not necessarily be part of the solutions.
+// This is key to implementing a breadth-first search.
+// var pending_states = std.ArrayList(State).init(allocator);
+var pending_states: std.ArrayList(State) = undefined;
+
 // NEED addHorizontalMoves function.
 // NEED addVerticalMoves function.
 // NEED addMoves function.
-// NEED addPendingState function.
+
+fn addPendingState(
+    board: Board,
+    cars: CarMap,
+    move: ?String,
+    previous_state: ?*State,
+) !void {
+    try pending_states.append(.{
+        .board = board,
+        .cars = cars,
+        .move = move,
+        .previous_state = previous_state,
+    });
+}
+
+test addPendingState {
+    pending_states = std.ArrayList(State).init(allocator);
+    defer pending_states.deinit();
+
+    var puzzle = try getPuzzle();
+    defer puzzle.deinit();
+
+    const board = try getBoard(puzzle);
+
+    const move = try createMove('A', "right", 2);
+    defer allocator.free(move);
+
+    try addPendingState(board, puzzle, move, null);
+
+    try expectEqual(pending_states.items.len, 1);
+
+    const state = pending_states.items[0];
+    try expectEqual(state.board, board);
+    try expectEqual(state.cars, puzzle);
+    try expectEqual(state.move, move);
+    try expectEqual(state.previous_state, null);
+}
 
 fn carLength(letter: u8) u8 {
     return if (contains("OPQR", letter)) 3 else 2;
