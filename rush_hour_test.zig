@@ -28,7 +28,7 @@ const Car = struct {
 const CarMap = std.AutoHashMap(u8, Car);
 
 const State = struct {
-    move: ?String,
+    move: ?String, // The first state doesn't have a move value.
     cars: CarMap, // keys are letters and values are Car structs
     board: Board,
     previous_state: ?*State,
@@ -374,7 +374,43 @@ fn printChar(writer: anytype, char: u8) void {
     writer.print("{c} ", .{char}) catch {};
 }
 
-// NEED printMoves function.
+// Prints the solution moves by walking backwards from the final state.
+fn printMoves(lastState: *const State) !void {
+    var moves = std.ArrayList(String).init(allocator);
+    defer moves.deinit();
+
+    var state: ?*const State = lastState;
+    while (state != null) {
+        // This first state doesn't have a "move" property.
+        if (state.move) |move| {
+            try moves.append(move);
+        }
+        state = state.previous_state;
+    }
+
+    // The moves are in reverse order, so print them from the last to the first.
+    var i = moves.length - 1;
+    while (i >= 0) : (i -= 1) {
+        print(moves[i]);
+    }
+}
+
+test printMoves {
+    pending_states = std.ArrayList(State).init(allocator);
+    defer pending_states.deinit();
+
+    var puzzle = try getPuzzle();
+    defer puzzle.deinit();
+
+    const board = try getBoard(puzzle);
+
+    const move = try createMove('A', "right", 2);
+    defer allocator.free(move);
+
+    try addPendingState(board, puzzle, move, null);
+    const state = pending_states.items[0];
+    try printMoves(&state);
+}
 
 fn printString(writer: anytype, string: String) void {
     // This ignores errors.
