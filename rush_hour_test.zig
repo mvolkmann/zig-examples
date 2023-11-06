@@ -367,8 +367,9 @@ test setColumn {
 }
 
 fn setRow(board: anytype, row: u8, startColumn: u8, length: u8, letter: u8) void {
+    var boardRow = &board[row];
     for (startColumn..startColumn + length) |column| {
-        board[row][column] = letter;
+        boardRow[column] = letter;
     }
 }
 
