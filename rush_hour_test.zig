@@ -21,8 +21,8 @@ const Board = [SIZE]Row;
 const Car = struct {
     row: ?u8 = undefined,
     column: ?u8 = undefined,
-    currentRow: ?u8 = undefined,
-    currentColumn: ?u8 = undefined,
+    current_row: ?u8 = undefined,
+    current_column: ?u8 = undefined,
 };
 
 const CarMap = std.AutoHashMap(u8, Car);
@@ -31,7 +31,7 @@ const State = struct {
     move: ?String,
     cars: CarMap, // keys are letters and values are Car structs
     board: Board,
-    previousState: ?*State,
+    previous_state: ?*State,
 };
 
 // Need to use std.testing.allocator to detect memory leaks.
@@ -116,37 +116,37 @@ fn getBoard(cars: CarMap) !Board {
             const length = carLength(letter);
 
             if (isHorizontal(car)) {
-                if (car.currentColumn) |start| {
+                if (car.current_column) |start| {
                     const end = start + length;
                     if (car.row) |row| {
-                        var boardRow = &board[row];
+                        var board_row = &board[row];
                         for (start..end) |column| {
                             // Check if another car already occupies this cell.
                             // If so then there is a error in the puzzle description.
-                            const existing = boardRow[column];
+                            const existing = board_row[column];
                             if (existing != SPACE) {
                                 try overlapPanic(letter, existing);
                             }
 
-                            boardRow[column] = letter;
+                            board_row[column] = letter;
                         }
                     }
                 }
-            } else if (car.currentRow) |start| { // should always be defined
+            } else if (car.current_row) |start| { // should always be defined
                 // The car is vertical.
                 const column = car.column orelse 0; // should always be defined
                 const end = start + length;
                 for (start..end) |row| {
-                    var boardRow = &board[row];
+                    var board_row = &board[row];
 
                     // Check if another car already occupies this cell.
                     // If so then there is a error in the puzzle description.
-                    const existing = boardRow[column];
+                    const existing = board_row[column];
                     if (existing != SPACE) {
                         try overlapPanic(letter, existing);
                     }
 
-                    boardRow[column] = letter;
+                    board_row[column] = letter;
                 }
             }
         }
@@ -199,14 +199,14 @@ fn getPuzzle() !CarMap {
     var puzzle = CarMap.init(allocator);
 
     // Can these puts be performed at compile-time?
-    try puzzle.put('A', .{ .row = 0, .currentColumn = 0 });
-    try puzzle.put('B', .{ .column = 0, .currentRow = 4 });
-    try puzzle.put('C', .{ .row = 4, .currentColumn = 4 });
-    try puzzle.put('O', .{ .column = 5, .currentRow = 0 });
-    try puzzle.put('P', .{ .column = 0, .currentRow = 1 });
-    try puzzle.put('Q', .{ .column = 3, .currentRow = 1 });
-    try puzzle.put('R', .{ .row = 5, .currentColumn = 2 });
-    try puzzle.put('X', .{ .row = EXIT_ROW, .currentColumn = 1 });
+    try puzzle.put('A', .{ .row = 0, .current_column = 0 });
+    try puzzle.put('B', .{ .column = 0, .current_row = 4 });
+    try puzzle.put('C', .{ .row = 4, .current_column = 4 });
+    try puzzle.put('O', .{ .column = 5, .current_row = 0 });
+    try puzzle.put('P', .{ .column = 0, .current_row = 1 });
+    try puzzle.put('Q', .{ .column = 3, .current_row = 1 });
+    try puzzle.put('R', .{ .row = 5, .current_column = 2 });
+    try puzzle.put('X', .{ .row = EXIT_ROW, .current_column = 1 });
 
     return puzzle;
 }
@@ -221,7 +221,7 @@ fn getStateId(cars: CarMap) String {
     var iter = cars.valueIterator();
     var i: u8 = 0;
     while (iter.next()) |car| {
-        const number = car.currentRow orelse car.currentColumn orelse 0;
+        const number = car.current_row orelse car.current_column orelse 0;
         positions[i] = number + 48; // converts to ASCII
         i += 1;
     }
@@ -241,13 +241,13 @@ fn isGoalReached(board: Board, cars: CarMap) bool {
     // Get the column after the end of the X car.
     // This assumes the X car length is 2.
     if (cars.get('X')) |car| {
-        if (car.currentColumn) |currentColumn| {
-            const startColumn = currentColumn + 2;
-            const exitRow = board[EXIT_ROW];
+        if (car.current_column) |current_column| {
+            const start_column = current_column + 2;
+            const exit_row = board[EXIT_ROW];
 
             // Check for cars blocking the exit.
-            for (startColumn..SIZE) |column| {
-                if (exitRow[column] != SPACE) return false;
+            for (start_column..SIZE) |column| {
+                if (exit_row[column] != SPACE) return false;
             }
             return true;
         } else {
@@ -273,9 +273,9 @@ inline fn isHorizontal(car: Car) bool {
 }
 
 test isHorizontal {
-    var car = Car{ .row = 4, .currentColumn = 4 };
+    var car = Car{ .row = 4, .current_column = 4 };
     try expect(isHorizontal(car));
-    car = Car{ .column = 3, .currentRow = 1 };
+    car = Car{ .column = 3, .current_row = 1 };
     try expect(!isHorizontal(car));
 }
 
@@ -345,8 +345,8 @@ fn println(writer: anytype, string: String) void {
 }
 
 // This sets the board letter used in a range of rows for a given column.
-fn setColumn(board: anytype, column: u8, startRow: u8, length: u8, letter: u8) void {
-    for (startRow..startRow + length) |row| {
+fn setColumn(board: anytype, column: u8, start_row: u8, length: u8, letter: u8) void {
+    for (start_row..start_row + length) |row| {
         board[row][column] = letter;
     }
 }
@@ -358,18 +358,18 @@ test setColumn {
     var board = try getBoard(puzzle);
 
     const column = 3;
-    const startRow = 1;
+    const start_row = 1;
     const length = 2;
     const letter = 'A';
-    setColumn(&board, column, startRow, length, letter);
-    try expectEqual(board[startRow][column], letter);
-    try expectEqual(board[startRow + 1][column], letter);
+    setColumn(&board, column, start_row, length, letter);
+    try expectEqual(board[start_row][column], letter);
+    try expectEqual(board[start_row + 1][column], letter);
 }
 
-fn setRow(board: anytype, row: u8, startColumn: u8, length: u8, letter: u8) void {
-    var boardRow = &board[row];
-    for (startColumn..startColumn + length) |column| {
-        boardRow[column] = letter;
+fn setRow(board: anytype, row: u8, start_column: u8, length: u8, letter: u8) void {
+    var board_row = &board[row];
+    for (start_column..start_column + length) |column| {
+        board_row[column] = letter;
     }
 }
 
@@ -380,12 +380,12 @@ test setRow {
     var board = try getBoard(puzzle);
 
     const row = 3;
-    const startColumn = 1;
+    const start_column = 1;
     const length = 2;
     const letter = 'A';
-    setRow(&board, row, startColumn, length, letter);
-    try expectEqual(board[row][startColumn], letter);
-    try expectEqual(board[row][startColumn + 1], letter);
+    setRow(&board, row, start_column, length, letter);
+    try expectEqual(board[row][start_column], letter);
+    try expectEqual(board[row][start_column + 1], letter);
 }
 
 // NEED solve function.

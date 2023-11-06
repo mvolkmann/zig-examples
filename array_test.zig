@@ -215,6 +215,10 @@ test set1D {
 // Note the need for the type of arr to be anytype rather than [][]u8.
 fn set2D(arr: anytype, row: usize, col: usize, value: u8) void {
     arr[row][col] = value;
+
+    // This also works. Note the need to get a pointer to the row slice.
+    // var arr_row = &arr[row];
+    // arr_row[col] = value;
 }
 
 test set2D {
