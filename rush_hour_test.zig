@@ -53,13 +53,18 @@ fn addPendingState(
     board: Board,
     cars: CarMap,
     move: ?String,
-    previous_state: ?*State,
 ) !void {
+    // Get the current, last state.
+    const items = pending_states.items;
+    const len = items.len;
+    const last_state_ptr = if (len == 0) null else &items[len - 1];
+
+    // Add a new state after the last one.
     try pending_states.append(.{
         .board = board,
         .cars = cars,
         .move = move,
-        .previous_state = previous_state,
+        .previous_state = last_state_ptr,
     });
 }
 
@@ -72,18 +77,33 @@ test addPendingState {
 
     const board = try getBoard(puzzle);
 
-    const move = try createMove('A', "right", 2);
-    defer allocator.free(move);
+    // Add a move.
+    var move1 = try createMove('A', "right", 2);
+    defer allocator.free(move1);
+    try addPendingState(board, puzzle, move1);
 
-    try addPendingState(board, puzzle, move, null);
+    // Add another move.
+    var move2 = try createMove('B', "down", 3);
+    defer allocator.free(move2);
+    try addPendingState(board, puzzle, move2);
 
-    try expectEqual(pending_states.items.len, 1);
+    const items = pending_states.items;
+    try expectEqual(pending_states.items.len, 2);
 
-    const state = pending_states.items[0];
-    try expectEqual(state.board, board);
-    try expectEqual(state.cars, puzzle);
-    try expectEqual(state.move, move);
-    try expectEqual(state.previous_state, null);
+    // Test the last state.
+    const lastState = items[1];
+    try expectEqual(lastState.board, board);
+    try expectEqual(lastState.cars, puzzle);
+    try expectEqual(lastState.move, move2);
+    var firstState = items[0];
+    // TODO: Why does this fail?
+    try expectEqual(lastState.previous_state, &firstState);
+
+    // Test the first state.
+    try expectEqual(firstState.board, board);
+    try expectEqual(firstState.cars, puzzle);
+    try expectEqual(firstState.move, move1);
+    try expectEqual(firstState.previous_state, null);
 }
 
 fn carLength(letter: u8) u8 {
@@ -333,7 +353,7 @@ fn overlapPanic(letter: u8, existing: u8) !void {
 fn printBoard(writer: anytype, board: Board) !void {
     println(writer, BORDER);
     for (board) |row| {
-        printString(writer, "|");
+        try printString(writer, "|");
         for (row) |letter| {
             const char = if (letter == 0) SPACE else letter;
             try writer.print(" {c}", .{char});
@@ -375,23 +395,30 @@ fn printChar(writer: anytype, char: u8) void {
 }
 
 // Prints the solution moves by walking backwards from the final state.
-fn printMoves(lastState: *const State) !void {
+fn printMoves(writer: anytype, lastState: *const State) !void {
     var moves = std.ArrayList(String).init(allocator);
     defer moves.deinit();
 
     var state: ?*const State = lastState;
     while (state != null) {
-        // This first state doesn't have a "move" property.
-        if (state.move) |move| {
-            try moves.append(move);
+        if (state) |pointer| {
+            // The first state doesn't have a "move" property.
+            if (pointer.*.move) |move| {
+                try moves.append(move);
+            }
+            state = pointer.previous_state;
+        } else {
+            unreachable;
         }
-        state = state.previous_state;
     }
 
     // The moves are in reverse order, so print them from the last to the first.
-    var i = moves.length - 1;
-    while (i >= 0) : (i -= 1) {
-        print(moves[i]);
+    const items = moves.items;
+    var i = items.len;
+    while (i > 0) {
+        i -= 1;
+        try printString(writer, items[i]);
+        try printString(writer, "\n");
     }
 }
 
@@ -404,17 +431,29 @@ test printMoves {
 
     const board = try getBoard(puzzle);
 
-    const move = try createMove('A', "right", 2);
-    defer allocator.free(move);
+    // Add a move.
+    var move1 = try createMove('A', "right", 2);
+    defer allocator.free(move1);
+    try addPendingState(board, puzzle, move1);
 
-    try addPendingState(board, puzzle, move, null);
-    const state = pending_states.items[0];
-    try printMoves(&state);
+    // Add another move.
+    var move2 = try createMove('B', "down", 3);
+    defer allocator.free(move2);
+    try addPendingState(board, puzzle, move2);
+
+    // // Print all the moves in reverse order.
+    // var buffer: [100]u8 = undefined;
+    // var fbs = std.io.fixedBufferStream(&buffer);
+    // var writer = fbs.writer();
+    // const state = pending_states.items[0];
+    // try printMoves(writer, &state);
+
+    // TODO: This is not working yet. Fix the test for addPendingStates first.
+    // try expectEqualStrings("A right 2\nB down 3\n", fbs.getWritten());
 }
 
-fn printString(writer: anytype, string: String) void {
-    // This ignores errors.
-    writer.print("{s}", .{string}) catch {};
+fn printString(writer: anytype, string: String) !void {
+    try writer.print("{s}", .{string});
 }
 
 fn println(writer: anytype, string: String) void {

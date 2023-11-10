@@ -33,3 +33,16 @@ test "tuple" {
         }
     }
 }
+
+fn takeAny(p: anytype) *const []u8 {
+    return @typeName(@TypeOf(p));
+}
+
+test "TypeOf" {
+    const i: u32 = 42;
+    // Why does the next line give this?
+    // error: expected type '*const [3:0]u8', found '*const []u8'
+    try expectEqual("u32", takeAny(i));
+}
+
+test "typeInfo" {}
