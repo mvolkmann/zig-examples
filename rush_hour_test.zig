@@ -433,6 +433,10 @@ fn printMoves(writer: anytype) !void {
 }
 
 test printMoves {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
     pending_states = PendingStatesList{};
 
     var puzzle = try getPuzzle(testAlloc);
@@ -443,12 +447,12 @@ test printMoves {
     // Add a move.
     var move1 = try createMove(testAlloc, 'A', "right", 2);
     defer testAlloc.free(move1);
-    try addPendingState(testAlloc, board, puzzle, move1);
+    try addPendingState(allocator, board, puzzle, move1);
 
     // Add another move.
     var move2 = try createMove(testAlloc, 'B', "down", 3);
     defer testAlloc.free(move2);
-    try addPendingState(testAlloc, board, puzzle, move2);
+    try addPendingState(allocator, board, puzzle, move2);
 
     // Print all the moves in reverse order.
     var buffer: [100]u8 = undefined;
