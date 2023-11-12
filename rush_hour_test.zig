@@ -93,19 +93,19 @@ test addPendingState {
     try expectEqual(pending_states.len(), 2);
 
     // Test the first state in the list.
-    const firstNode = pending_states.first orelse unreachable;
-    var statePtr = firstNode.data;
+    var node = pending_states.first orelse unreachable;
+    var statePtr = node.data;
     try expectEqual(statePtr.board, board);
     try expectEqual(statePtr.cars, puzzle);
     try expectEqual(statePtr.move, move2);
 
     // Test the next state in the list.
-    const nextNode = firstNode.next orelse unreachable;
-    statePtr = nextNode.data;
+    node = node.next orelse unreachable;
+    statePtr = node.data;
     try expectEqual(statePtr.board, board);
     try expectEqual(statePtr.cars, puzzle);
     try expectEqual(statePtr.move, move1);
-    try expectEqual(nextNode.next, null);
+    try expectEqual(node.next, null);
 }
 
 fn carLength(letter: u8) u8 {
