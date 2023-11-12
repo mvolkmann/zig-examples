@@ -38,10 +38,12 @@ const State = struct {
 const PendingStatesList = std.SinglyLinkedList(*State);
 const PendingStatesNode = PendingStatesList.Node;
 
-// Need to use std.testing.allocator to detect memory leaks.
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
-// const allocator = gpa.allocator();
+// Use this allocator to check for memory leaks.
 const testAlloc = std.testing.allocator;
+
+// Use this allocator to avoid checking for memory leaks.
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// const testAlloc = gpa.allocator();
 
 // These objects describe states that still need to be evaluated
 // and will not necessarily be part of the solutions.
@@ -402,18 +404,19 @@ fn printChar(writer: anytype, char: u8) void {
 }
 
 // Prints the solution moves by walking backwards from the final state.
-fn printMoves(writer: anytype, lastState: *const State) !void {
+fn printMoves(writer: anytype) !void {
     var moves = std.ArrayList(String).init(testAlloc);
     defer moves.deinit();
 
-    var state: ?*const State = lastState;
-    while (state != null) {
-        if (state) |pointer| {
+    var node_ptr: ?*const PendingStatesNode = pending_states.first;
+    while (node_ptr != null) {
+        if (node_ptr) |node| {
+            const state = node.data;
             // The first state doesn't have a "move" property.
-            if (pointer.*.move) |move| {
+            if (state.move) |move| {
                 try moves.append(move);
             }
-            state = pointer.previous_state;
+            node_ptr = node.next;
         } else {
             unreachable;
         }
@@ -430,33 +433,30 @@ fn printMoves(writer: anytype, lastState: *const State) !void {
 }
 
 test printMoves {
-    // pending_states = std.ArrayList(State).init(testAlloc);
-    // defer pending_states.deinit();
+    pending_states = PendingStatesList{};
 
-    // var puzzle = try getPuzzle(testAlloc);
-    // defer puzzle.deinit();
+    var puzzle = try getPuzzle(testAlloc);
+    defer puzzle.deinit();
 
-    // const board = try getBoard(testAlloc, puzzle);
+    const board = try getBoard(testAlloc, puzzle);
 
-    // // Add a move.
-    // var move1 = try createMove(testAlloc, 'A', "right", 2);
-    // defer testAlloc.free(move1);
-    // try addPendingState(testAlloc, board, puzzle, move1);
+    // Add a move.
+    var move1 = try createMove(testAlloc, 'A', "right", 2);
+    defer testAlloc.free(move1);
+    try addPendingState(testAlloc, board, puzzle, move1);
 
-    // // Add another move.
-    // var move2 = try createMove(testAlloc, 'B', "down", 3);
-    // defer testAlloc.free(move2);
-    // try addPendingState(testAlloc, board, puzzle, move2);
+    // Add another move.
+    var move2 = try createMove(testAlloc, 'B', "down", 3);
+    defer testAlloc.free(move2);
+    try addPendingState(testAlloc, board, puzzle, move2);
 
-    // // Print all the moves in reverse order.
-    // var buffer: [100]u8 = undefined;
-    // var fbs = std.io.fixedBufferStream(&buffer);
-    // var writer = fbs.writer();
-    // const state = pending_states.items[0];
-    // try printMoves(writer, &state);
+    // Print all the moves in reverse order.
+    var buffer: [100]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buffer);
+    var writer = fbs.writer();
+    try printMoves(writer);
 
-    // TODO: This is not working yet. Fix the test for addPendingStates first.
-    // try expectEqualStrings("A right 2\nB down 3\n", fbs.getWritten());
+    try expectEqualStrings("A right 2\nB down 3\n", fbs.getWritten());
 }
 
 fn printString(writer: anytype, string: String) !void {
