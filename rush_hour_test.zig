@@ -54,9 +54,9 @@ const test_alloc = std.testing.allocator;
 // create a new, empty SinglyLinkedList.
 var pending_states = PendingStatesList{};
 
-// NEED addHorizontalMoves function.
-// NEED addVerticalMoves function.
-// NEED addMoves function.
+// TODO: Need addHorizontalMoves function.
+// TODO: Need addVerticalMoves function.
+// TODO: Need addMoves function.
 
 fn addPendingState(
     allocator: Allocator,
@@ -524,6 +524,7 @@ test setRow {
 
 fn solve(puzzle: CarMap) !void {
     print("puzzle = {any}\n", .{puzzle});
+    // TODO: Implement this function.
 }
 
 pub fn main() !void {
