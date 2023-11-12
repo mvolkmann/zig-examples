@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const Allocator = std.mem.Allocator;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
@@ -34,79 +35,77 @@ const State = struct {
     previous_state: ?*State,
 };
 
+const PendingStatesList = std.SinglyLinkedList(*State);
+const PendingStatesNode = PendingStatesList.Node;
+
 // Need to use std.testing.allocator to detect memory leaks.
 // var gpa = std.heap.GeneralPurposeAllocator(.{}){}; // can't be const
 // const allocator = gpa.allocator();
-const allocator = std.testing.allocator;
+const testAlloc = std.testing.allocator;
 
 // These objects describe states that still need to be evaluated
 // and will not necessarily be part of the solutions.
 // This is key to implementing a breadth-first search.
-// Each test that relies on pending_states must create a new, empty ArrayList.
-// var pending_states = std.ArrayList(State).init(allocator);
-var pending_states: std.ArrayList(State) = undefined;
+// Each test that relies on pending_states must
+// create a new, empty SinglyLinkedList.
+var pending_states = PendingStatesList{};
 
 // NEED addHorizontalMoves function.
 // NEED addVerticalMoves function.
 // NEED addMoves function.
 
 fn addPendingState(
+    allocator: Allocator,
     board: Board,
     cars: CarMap,
     move: ?String,
 ) !void {
-    // Get the current, last state.
-    const items = pending_states.items;
-    const len = items.len;
-    print("addPendingState: len = {d}\n", .{len});
-    const last_state_ptr = if (len == 0) null else &items[len - 1];
-    print("addPendingState: last_state_ptr = {any}\n", .{last_state_ptr});
+    var statePtr = try allocator.create(State);
+    statePtr.board = board;
+    statePtr.cars = cars;
+    statePtr.move = move;
 
-    // Add a new state after the last one.
-    try pending_states.append(.{
-        .board = board,
-        .cars = cars,
-        .move = move,
-        .previous_state = last_state_ptr,
-    });
+    var node_ptr = try allocator.create(PendingStatesNode);
+    node_ptr.data = statePtr;
+    pending_states.prepend(node_ptr);
 }
 
 test addPendingState {
-    pending_states = std.ArrayList(State).init(allocator);
-    defer pending_states.deinit();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    var puzzle = try getPuzzle();
+    pending_states = PendingStatesList{};
+
+    var puzzle = try getPuzzle(allocator);
     defer puzzle.deinit();
 
-    const board = try getBoard(puzzle);
+    const board = try getBoard(allocator, puzzle);
 
     // Add a move.
-    var move1 = try createMove('A', "right", 2);
-    defer allocator.free(move1);
-    try addPendingState(board, puzzle, move1);
+    var move1 = try createMove(allocator, 'A', "right", 2);
+    try addPendingState(allocator, board, puzzle, move1);
 
     // Add another move.
-    var move2 = try createMove('B', "down", 3);
-    defer allocator.free(move2);
-    try addPendingState(board, puzzle, move2);
+    var move2 = try createMove(allocator, 'B', "down", 3);
+    try addPendingState(allocator, board, puzzle, move2);
 
-    const items = pending_states.items;
-    try expectEqual(pending_states.items.len, 2);
+    try expectEqual(pending_states.len(), 2);
 
-    // Test the last state.
-    const lastState = items[1];
-    try expectEqual(lastState.board, board);
-    try expectEqual(lastState.cars, puzzle);
-    try expectEqual(lastState.move, move2);
-    var firstState = items[0];
-    // TODO: Why does this fail?
-    // try expectEqual(lastState.previous_state, &firstState);
+    // Test the first state in the list.
+    const firstNode = pending_states.first orelse unreachable;
+    var statePtr = firstNode.data;
+    try expectEqual(statePtr.board, board);
+    try expectEqual(statePtr.cars, puzzle);
+    try expectEqual(statePtr.move, move2);
 
-    // Test the first state.
-    try expectEqual(firstState.board, board);
-    try expectEqual(firstState.cars, puzzle);
-    try expectEqual(firstState.move, move1);
-    try expectEqual(firstState.previous_state, null);
+    // Test the next state in the list.
+    const nextNode = firstNode.next orelse unreachable;
+    statePtr = nextNode.data;
+    try expectEqual(statePtr.board, board);
+    try expectEqual(statePtr.cars, puzzle);
+    try expectEqual(statePtr.move, move1);
+    try expectEqual(nextNode.next, null);
 }
 
 fn carLength(letter: u8) u8 {
@@ -137,10 +136,10 @@ fn copyBoard(board: Board) !Board {
 }
 
 test copyBoard {
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
-    const board = try getBoard(puzzle);
+    const board = try getBoard(testAlloc, puzzle);
     const copy = try copyBoard(board);
     try expect(&copy != &board);
     try expect(&copy[0] != &board[0]);
@@ -148,7 +147,12 @@ test copyBoard {
     try expectEqualSlices(Row, &board, &copy);
 }
 
-fn createMove(letter: u8, direction: String, distance: u8) !String {
+fn createMove(
+    allocator: Allocator,
+    letter: u8,
+    direction: String,
+    distance: u8,
+) !String {
     // TODO: Describe allocPrint in blog.
     return try std.fmt.allocPrint(
         allocator,
@@ -158,13 +162,13 @@ fn createMove(letter: u8, direction: String, distance: u8) !String {
 }
 
 test createMove {
-    const move = try createMove('A', "left", 3);
-    defer allocator.free(move);
+    const move = try createMove(testAlloc, 'A', "left", 3);
+    defer testAlloc.free(move);
     try expectEqualStrings("A left 3", move);
 }
 
 // This creates a 2D array of car letters for a given puzzle.
-fn getBoard(cars: CarMap) !Board {
+fn getBoard(allocator: Allocator, cars: CarMap) !Board {
     if (cars.get('X') == null) {
         @panic("Puzzle is missing car X!");
     }
@@ -172,8 +176,8 @@ fn getBoard(cars: CarMap) !Board {
     // Create an empty board.
     var board: Board = .{.{SPACE} ** SIZE} ** SIZE;
 
-    const letters = try getLetters(cars);
-    defer allocator.free(letters);
+    const letters = try getLetters(allocator, cars);
+    defer testAlloc.free(letters);
 
     // Add cars to the board.
     for (letters) |letter| {
@@ -221,10 +225,10 @@ fn getBoard(cars: CarMap) !Board {
 }
 
 test getBoard {
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
-    const board = try getBoard(puzzle);
+    const board = try getBoard(testAlloc, puzzle);
     const expected = [_]String{
         "AA   O",
         "P  Q O",
@@ -239,7 +243,7 @@ test getBoard {
     }
 }
 
-fn getLetters(cars: CarMap) ![]u8 {
+fn getLetters(allocator: Allocator, cars: CarMap) ![]u8 {
     var letters = std.ArrayList(u8).init(allocator);
     defer letters.deinit();
 
@@ -248,19 +252,19 @@ fn getLetters(cars: CarMap) ![]u8 {
         try letters.append(key.*);
     }
 
-    return allocator.dupe(u8, letters.items);
+    return testAlloc.dupe(u8, letters.items);
 }
 
 test getLetters {
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
-    const letters = try getLetters(puzzle);
-    defer allocator.free(letters);
+    const letters = try getLetters(testAlloc, puzzle);
+    defer testAlloc.free(letters);
     try expectEqualStrings("RPXACQOB", letters);
 }
 
-fn getPuzzle() !CarMap {
+fn getPuzzle(allocator: Allocator) !CarMap {
     var puzzle = CarMap.init(allocator);
 
     // Can these puts be performed at compile-time?
@@ -294,7 +298,7 @@ fn getStateId(cars: CarMap) String {
 }
 
 test getStateId {
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
     const stateId = getStateId(puzzle);
@@ -324,10 +328,10 @@ fn isGoalReached(board: Board, cars: CarMap) bool {
 }
 
 test isGoalReached {
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
-    const board = try getBoard(puzzle);
+    const board = try getBoard(testAlloc, puzzle);
     try expect(!isGoalReached(board, puzzle));
 
     //TODO: Add a test where the goal IS reached.
@@ -346,7 +350,7 @@ test isHorizontal {
 
 fn overlapPanic(letter: u8, existing: u8) !void {
     const message = try std.fmt.allocPrint(
-        allocator,
+        testAlloc,
         "Car {c} overlaps car {c}!",
         .{ letter, existing },
     );
@@ -371,10 +375,10 @@ test printBoard {
     var fbs = std.io.fixedBufferStream(&buffer);
     var writer = fbs.writer();
 
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
-    const board = try getBoard(puzzle);
+    const board = try getBoard(testAlloc, puzzle);
     try printBoard(writer, board);
 
     const actual = fbs.getWritten();
@@ -399,7 +403,7 @@ fn printChar(writer: anytype, char: u8) void {
 
 // Prints the solution moves by walking backwards from the final state.
 fn printMoves(writer: anytype, lastState: *const State) !void {
-    var moves = std.ArrayList(String).init(allocator);
+    var moves = std.ArrayList(String).init(testAlloc);
     defer moves.deinit();
 
     var state: ?*const State = lastState;
@@ -426,23 +430,23 @@ fn printMoves(writer: anytype, lastState: *const State) !void {
 }
 
 test printMoves {
-    // pending_states = std.ArrayList(State).init(allocator);
+    // pending_states = std.ArrayList(State).init(testAlloc);
     // defer pending_states.deinit();
 
-    // var puzzle = try getPuzzle();
+    // var puzzle = try getPuzzle(testAlloc);
     // defer puzzle.deinit();
 
-    // const board = try getBoard(puzzle);
+    // const board = try getBoard(testAlloc, puzzle);
 
     // // Add a move.
-    // var move1 = try createMove('A', "right", 2);
-    // defer allocator.free(move1);
-    // try addPendingState(board, puzzle, move1);
+    // var move1 = try createMove(testAlloc, 'A', "right", 2);
+    // defer testAlloc.free(move1);
+    // try addPendingState(testAlloc, board, puzzle, move1);
 
     // // Add another move.
-    // var move2 = try createMove('B', "down", 3);
-    // defer allocator.free(move2);
-    // try addPendingState(board, puzzle, move2);
+    // var move2 = try createMove(testAlloc, 'B', "down", 3);
+    // defer testAlloc.free(move2);
+    // try addPendingState(testAlloc, board, puzzle, move2);
 
     // // Print all the moves in reverse order.
     // var buffer: [100]u8 = undefined;
@@ -472,10 +476,10 @@ fn setColumn(board: anytype, column: u8, start_row: u8, length: u8, letter: u8) 
 }
 
 test setColumn {
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
-    var board = try getBoard(puzzle);
+    var board = try getBoard(testAlloc, puzzle);
 
     const column = 3;
     const start_row = 1;
@@ -494,10 +498,10 @@ fn setRow(board: anytype, row: u8, start_column: u8, length: u8, letter: u8) voi
 }
 
 test setRow {
-    var puzzle = try getPuzzle();
+    var puzzle = try getPuzzle(testAlloc);
     defer puzzle.deinit();
 
-    var board = try getBoard(puzzle);
+    var board = try getBoard(testAlloc, puzzle);
 
     const row = 3;
     const start_column = 1;
