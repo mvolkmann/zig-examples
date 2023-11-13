@@ -1,5 +1,3 @@
-const is_test = @import("builtin").is_test;
-
 const std = @import("std");
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
@@ -54,7 +52,72 @@ const test_alloc = std.testing.allocator;
 // create a new, empty SinglyLinkedList.
 var pending_states = PendingStatesList{};
 
-// TODO: Need addHorizontalMoves function.
+fn addHorizontalMoves(
+    allocator: std.mem.Allocator,
+    state_ptr: *State,
+    letter: u8,
+    row: u8,
+    start_column: u8,
+    end_column: u8,
+    delta: i8,
+) !void {
+    const board = state_ptr.board;
+    const cars = state_ptr.cars;
+
+    // A car with a matching letter must be found.
+    const car = cars.get(letter) orelse unreachable;
+
+    // Cars being moved horizontally MUST have a currentColumn.
+    const current_column = car.current_column orelse unreachable;
+
+    const length = carLength(letter);
+
+    var column = start_column;
+    while (true) {
+        // Make a copy of the cars objects where the car being moved is updated.
+        var new_cars = copyCars(cars);
+        try new_cars.put(letter, Car{ .row = row, .current_column = column });
+
+        // Make a copy of the board where the car being moved is updated.
+        var new_board = copyBoard(board);
+
+        // Remove car being moved.
+        setRow(new_board, row, current_column, length, SPACE);
+
+        // Add car being moved in new location.
+        setRow(new_board, row, column, length, letter);
+
+        const direction = if (delta == -1) "right" else "left";
+        const distance = @abs(column - current_column);
+        const move = try createMove(allocator, letter, direction, distance);
+        try addPendingState(allocator, new_board, new_cars, move);
+
+        if (column == end_column) break;
+
+        // column += delta;
+        const i8_column: i8 = @intCast(column);
+        const next_column = i8_column + delta;
+        if (next_column < 0 or next_column >= SIZE) unreachable;
+        column = @intCast(next_column);
+    }
+}
+
+test addHorizontalMoves {
+    var puzzle = try getPuzzle(test_alloc);
+    defer puzzle.deinit();
+
+    const board = try getBoard(test_alloc, puzzle);
+    try sow.print("\n", .{});
+    try printBoard(sow, board);
+
+    const node = pending_states.first orelse unreachable;
+    print("node = {any}\n", .{node});
+    const state = node.data;
+    print("state = {any}\n", .{state});
+    try addHorizontalMoves(test_alloc, state, 'A', 0, 4, 1, -1);
+    // const state = pending_states.first.data;
+}
+
 // TODO: Need addVerticalMoves function.
 // TODO: Need addMoves function.
 
@@ -87,11 +150,11 @@ test addPendingState {
     const board = try getBoard(allocator, puzzle);
 
     // Add a move.
-    var move1 = try createMove(allocator, 'A', "right", 2);
+    const move1 = try createMove(allocator, 'A', "right", 2);
     try addPendingState(allocator, board, puzzle, move1);
 
     // Add another move.
-    var move2 = try createMove(allocator, 'B', "down", 3);
+    const move2 = try createMove(allocator, 'B', "down", 3);
     try addPendingState(allocator, board, puzzle, move2);
 
     try expectEqual(pending_states.len(), 2);
@@ -134,7 +197,7 @@ test contains {
 }
 
 // This makes a deep copy of a board.
-fn copyBoard(board: Board) !Board {
+fn copyBoard(board: Board) Board {
     var copy: Board = board;
     return copy;
 }
@@ -144,11 +207,25 @@ test copyBoard {
     defer puzzle.deinit();
 
     const board = try getBoard(test_alloc, puzzle);
-    const copy = try copyBoard(board);
+    const copy = copyBoard(board);
     try expect(&copy != &board);
     try expect(&copy[0] != &board[0]);
     try expectEqualSlices(u8, &board[0], &copy[0]);
     try expectEqualSlices(Row, &board, &copy);
+}
+
+fn copyCars(cars: CarMap) CarMap {
+    var copy: CarMap = cars;
+    return copy;
+}
+
+test copyCars {
+    var puzzle = try getPuzzle(test_alloc);
+    defer puzzle.deinit();
+
+    const copy = copyCars(puzzle);
+    try expect(&copy != &puzzle);
+    try expect(&copy.get('A') != &puzzle.get('A'));
 }
 
 fn createMove(
