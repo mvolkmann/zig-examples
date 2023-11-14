@@ -26,11 +26,12 @@ const Car = struct {
     current_column: ?u8 = undefined,
 };
 
+// Keys are letters and values are Car structs.
 const CarMap = std.AutoHashMap(u8, Car);
 
 const State = struct {
     move: ?String, // The first state doesn't have a move value.
-    cars: CarMap, // keys are letters and values are Car structs
+    cars: CarMap,
     board: Board,
     previous_state: ?*State,
 
@@ -106,22 +107,18 @@ fn addHorizontalMoves(
     }
 }
 
-// test addHorizontalMoves {
-//     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-//     defer arena.deinit();
-//     const allocator = arena.allocator();
+test addHorizontalMoves {
+    var puzzle = try getPuzzle(test_alloc);
+    defer puzzle.deinit();
 
-//     var puzzle = try getPuzzle(allocator);
-//     defer puzzle.deinit();
+    const board = try getBoard(test_alloc, puzzle);
+    try sow.print("\n", .{});
+    try printBoard(sow, board);
 
-//     const board = try getBoard(allocator, puzzle);
-//     try sow.print("\n", .{});
-//     try printBoard(sow, board);
+    try addHorizontalMoves(test_alloc, &board, puzzle, 'A', 0, 4, 1, -1);
 
-//     try addHorizontalMoves(allocator, &board, puzzle, 'A', 0, 4, 1, -1);
-
-//     freePendingStates();
-// }
+    freePendingStates(test_alloc);
+}
 
 // TODO: Need addVerticalMoves function.
 // TODO: Need addMoves function.
@@ -253,12 +250,12 @@ test createMove {
     try expectEqualStrings("A left 3", move);
 }
 
-fn freePendingStates() void {
+fn freePendingStates(allocator: std.mem.Allocator) void {
     var node_ptr: ?*const PendingStatesNode = pending_states.first;
     while (node_ptr != null) {
         if (node_ptr) |node| {
             const state = node.data;
-            state.deinit();
+            state.deinit(allocator);
             node_ptr = node.next;
         } else {
             unreachable;
