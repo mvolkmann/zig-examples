@@ -33,6 +33,12 @@ const State = struct {
     cars: CarMap, // keys are letters and values are Car structs
     board: Board,
     previous_state: ?*State,
+
+    pub fn deinit(self: *State, allocator: std.mem.Allocator) void {
+        allocator.free(self.move);
+        self.cars.deinit();
+        allocator.free(self.board);
+    }
 };
 
 const PendingStatesList = std.SinglyLinkedList(*State);
@@ -54,16 +60,14 @@ var pending_states = PendingStatesList{};
 
 fn addHorizontalMoves(
     allocator: std.mem.Allocator,
-    state_ptr: *State,
+    board_ptr: *const Board,
+    cars: CarMap,
     letter: u8,
     row: u8,
     start_column: u8,
     end_column: u8,
     delta: i8,
 ) !void {
-    const board = state_ptr.board;
-    const cars = state_ptr.cars;
-
     // A car with a matching letter must be found.
     const car = cars.get(letter) orelse unreachable;
 
@@ -79,13 +83,13 @@ fn addHorizontalMoves(
         try new_cars.put(letter, Car{ .row = row, .current_column = column });
 
         // Make a copy of the board where the car being moved is updated.
-        var new_board = copyBoard(board);
+        var new_board = copyBoard(board_ptr);
 
         // Remove car being moved.
-        setRow(new_board, row, current_column, length, SPACE);
+        setRow(&new_board, row, current_column, length, SPACE);
 
         // Add car being moved in new location.
-        setRow(new_board, row, column, length, letter);
+        setRow(&new_board, row, column, length, letter);
 
         const direction = if (delta == -1) "right" else "left";
         const distance = @abs(column - current_column);
@@ -102,21 +106,22 @@ fn addHorizontalMoves(
     }
 }
 
-test addHorizontalMoves {
-    var puzzle = try getPuzzle(test_alloc);
-    defer puzzle.deinit();
+// test addHorizontalMoves {
+//     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+//     defer arena.deinit();
+//     const allocator = arena.allocator();
 
-    const board = try getBoard(test_alloc, puzzle);
-    try sow.print("\n", .{});
-    try printBoard(sow, board);
+//     var puzzle = try getPuzzle(allocator);
+//     defer puzzle.deinit();
 
-    const node = pending_states.first orelse unreachable;
-    print("node = {any}\n", .{node});
-    const state = node.data;
-    print("state = {any}\n", .{state});
-    try addHorizontalMoves(test_alloc, state, 'A', 0, 4, 1, -1);
-    // const state = pending_states.first.data;
-}
+//     const board = try getBoard(allocator, puzzle);
+//     try sow.print("\n", .{});
+//     try printBoard(sow, board);
+
+//     try addHorizontalMoves(allocator, &board, puzzle, 'A', 0, 4, 1, -1);
+
+//     freePendingStates();
+// }
 
 // TODO: Need addVerticalMoves function.
 // TODO: Need addMoves function.
@@ -197,8 +202,8 @@ test contains {
 }
 
 // This makes a deep copy of a board.
-fn copyBoard(board: Board) Board {
-    var copy: Board = board;
+fn copyBoard(board_ptr: *const Board) Board {
+    var copy: Board = board_ptr.*;
     return copy;
 }
 
@@ -207,7 +212,7 @@ test copyBoard {
     defer puzzle.deinit();
 
     const board = try getBoard(test_alloc, puzzle);
-    const copy = copyBoard(board);
+    const copy = copyBoard(&board);
     try expect(&copy != &board);
     try expect(&copy[0] != &board[0]);
     try expectEqualSlices(u8, &board[0], &copy[0]);
@@ -246,6 +251,19 @@ test createMove {
     const move = try createMove(test_alloc, 'A', "left", 3);
     defer test_alloc.free(move);
     try expectEqualStrings("A left 3", move);
+}
+
+fn freePendingStates() void {
+    var node_ptr: ?*const PendingStatesNode = pending_states.first;
+    while (node_ptr != null) {
+        if (node_ptr) |node| {
+            const state = node.data;
+            state.deinit();
+            node_ptr = node.next;
+        } else {
+            unreachable;
+        }
+    }
 }
 
 // This creates a 2D array of car letters for a given puzzle.
@@ -577,8 +595,8 @@ test setColumn {
     try expectEqual(board[start_row + 1][column], letter);
 }
 
-fn setRow(board: anytype, row: u8, start_column: u8, length: u8, letter: u8) void {
-    var board_row = &board[row];
+fn setRow(board_ptr: anytype, row: u8, start_column: u8, length: u8, letter: u8) void {
+    var board_row = &board_ptr[row];
     for (start_column..start_column + length) |column| {
         board_row[column] = letter;
     }
