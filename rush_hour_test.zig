@@ -36,9 +36,15 @@ const State = struct {
     previous_state: ?*State,
 
     pub fn deinit(self: *State, allocator: std.mem.Allocator) void {
-        allocator.free(self.move);
-        self.cars.deinit();
-        allocator.free(self.board);
+        _ = allocator;
+        print("State.deinit: self = {any}\n", .{self});
+        // print("State.deinit: move = {s}\n", .{self.move});
+        // print("State.deinit: move is a {any}\n", .{@typeName(@TypeOf(self.move))});
+        // allocator.free(self.move);
+        // self.cars.deinit();
+        // try printBoard(sow, self.board);
+        // print("State.deinit: board is a {any}\n", .{@typeName(@TypeOf(self.board))});
+        // allocator.free(self.board);
     }
 };
 
@@ -252,9 +258,12 @@ test createMove {
 
 fn freePendingStates(allocator: std.mem.Allocator) void {
     var node_ptr: ?*const PendingStatesNode = pending_states.first;
+    print("freePendingStates: node_ptr = {any}\n", .{node_ptr});
     while (node_ptr != null) {
         if (node_ptr) |node| {
+            print("freePendingStates: node = {any}\n", .{node});
             const state = node.data;
+            print("freePendingStates: state = {any}\n", .{state});
             state.deinit(allocator);
             node_ptr = node.next;
         } else {
