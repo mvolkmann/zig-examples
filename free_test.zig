@@ -4,10 +4,10 @@ const Allocator = std.mem.Allocator;
 const String = []const u8;
 
 const State = struct {
-    move: String,
+    move: ?String,
 
     pub fn deinit(self: *State, allocator: std.mem.Allocator) void {
-        allocator.free(self.move);
+        if (self.move) |move| allocator.free(move);
     }
 };
 
@@ -29,6 +29,7 @@ test "State deinit" {
 
     var state_ptr = try allocator.create(State);
     state_ptr.move = move;
+
     defer {
         state_ptr.deinit(allocator);
         allocator.destroy(state_ptr);

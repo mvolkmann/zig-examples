@@ -6,6 +6,9 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
+// Use this allocator to check for memory leaks.
+const test_alloc = std.testing.allocator;
+
 const SIZE = 6; // # of rows and columns on board
 const BORDER = "+" ++ ("-" ** (SIZE * 2 + 1)) ++ "+";
 const EXIT_ROW = 2;
@@ -35,21 +38,16 @@ const State = struct {
     board: Board,
     previous_state: ?*State,
 
-    pub fn deinit(self: *State, allocator: std.mem.Allocator) void {
-        // print("State.deinit: self = {any}\n", .{self});
-        // print("State.deinit: move = {s}\n", .{self.move});
-        // print("State.deinit: move is a {any}\n", .{@typeName(@TypeOf(self.move))});
-        allocator.free(self.move);
+    pub fn deinit(self: *State, allocator: Allocator) void {
+        if (self.move) |move| allocator.free(move);
         self.cars.deinit();
-        // try printBoard(sow, self.board);
-        // print("State.deinit: board is a {any}\n", .{@typeName(@TypeOf(self.board))});
-        // allocator.free(self.board);
+        // self.board is owned by the State instance,
+        // so it is freed when the state instance is freed.
     }
 };
 
 test "State deinit" {
     var puzzle = try getPuzzle(test_alloc);
-    defer puzzle.deinit();
     const board = try getBoard(test_alloc, puzzle);
     const move = try createMove(test_alloc, 'A', "right", 2);
 
@@ -58,14 +56,14 @@ test "State deinit" {
     state_ptr.cars = puzzle;
     state_ptr.move = move;
 
-    state_ptr.deinit(test_alloc);
+    defer {
+        state_ptr.deinit(test_alloc);
+        test_alloc.destroy(state_ptr);
+    }
 }
 
 const PendingStatesList = std.SinglyLinkedList(*State);
 const PendingStatesNode = PendingStatesList.Node;
-
-// Use this allocator to check for memory leaks.
-const test_alloc = std.testing.allocator;
 
 // Use this allocator to avoid checking for memory leaks.
 // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -79,7 +77,7 @@ const test_alloc = std.testing.allocator;
 var pending_states = PendingStatesList{};
 
 fn addHorizontalMoves(
-    allocator: std.mem.Allocator,
+    allocator: Allocator,
     board_ptr: *const Board,
     cars: CarMap,
     letter: u8,
@@ -270,7 +268,7 @@ test createMove {
     try expectEqualStrings("A left 3", move);
 }
 
-fn freePendingStates(allocator: std.mem.Allocator) void {
+fn freePendingStates(allocator: Allocator) void {
     var node_ptr: ?*const PendingStatesNode = pending_states.first;
     print("freePendingStates: node_ptr = {any}\n", .{node_ptr});
     while (node_ptr != null) {
@@ -468,7 +466,7 @@ test isHorizontal {
 }
 
 fn overlapPanic(
-    allocator: std.mem.Allocator,
+    allocator: Allocator,
     letter: u8,
     existing: u8,
 ) !void {
@@ -525,7 +523,7 @@ fn printChar(writer: anytype, char: u8) void {
 }
 
 // Prints the solution moves by walking backwards from the final state.
-fn printMoves(allocator: std.mem.Allocator, writer: anytype) !void {
+fn printMoves(allocator: Allocator, writer: anytype) !void {
     var moves = std.ArrayList(String).init(allocator);
     defer moves.deinit();
 
