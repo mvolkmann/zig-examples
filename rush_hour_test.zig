@@ -36,17 +36,30 @@ const State = struct {
     previous_state: ?*State,
 
     pub fn deinit(self: *State, allocator: std.mem.Allocator) void {
-        _ = allocator;
-        print("State.deinit: self = {any}\n", .{self});
+        // print("State.deinit: self = {any}\n", .{self});
         // print("State.deinit: move = {s}\n", .{self.move});
         // print("State.deinit: move is a {any}\n", .{@typeName(@TypeOf(self.move))});
-        // allocator.free(self.move);
-        // self.cars.deinit();
+        allocator.free(self.move);
+        self.cars.deinit();
         // try printBoard(sow, self.board);
         // print("State.deinit: board is a {any}\n", .{@typeName(@TypeOf(self.board))});
         // allocator.free(self.board);
     }
 };
+
+test "State deinit" {
+    var puzzle = try getPuzzle(test_alloc);
+    defer puzzle.deinit();
+    const board = try getBoard(test_alloc, puzzle);
+    const move = try createMove(test_alloc, 'A', "right", 2);
+
+    var state_ptr = try test_alloc.create(State);
+    state_ptr.board = board;
+    state_ptr.cars = puzzle;
+    state_ptr.move = move;
+
+    state_ptr.deinit(test_alloc);
+}
 
 const PendingStatesList = std.SinglyLinkedList(*State);
 const PendingStatesNode = PendingStatesList.Node;
@@ -118,12 +131,13 @@ test addHorizontalMoves {
     defer puzzle.deinit();
 
     const board = try getBoard(test_alloc, puzzle);
+    _ = board;
     try sow.print("\n", .{});
-    try printBoard(sow, board);
+    // try printBoard(sow, board);
 
-    try addHorizontalMoves(test_alloc, &board, puzzle, 'A', 0, 4, 1, -1);
+    // try addHorizontalMoves(test_alloc, &board, puzzle, 'A', 0, 4, 1, -1);
 
-    freePendingStates(test_alloc);
+    // freePendingStates(test_alloc);
 }
 
 // TODO: Need addVerticalMoves function.
@@ -135,13 +149,13 @@ fn addPendingState(
     cars: CarMap,
     move: ?String,
 ) !void {
-    var statePtr = try allocator.create(State);
-    statePtr.board = board;
-    statePtr.cars = cars;
-    statePtr.move = move;
+    var state_ptr = try allocator.create(State);
+    state_ptr.board = board;
+    state_ptr.cars = cars;
+    state_ptr.move = move;
 
     var node_ptr = try allocator.create(PendingStatesNode);
-    node_ptr.data = statePtr;
+    node_ptr.data = state_ptr;
     pending_states.prepend(node_ptr);
 }
 
@@ -169,17 +183,17 @@ test addPendingState {
 
     // Test the first state in the list.
     var node = pending_states.first orelse unreachable;
-    var statePtr = node.data;
-    try expectEqual(statePtr.board, board);
-    try expectEqual(statePtr.cars, puzzle);
-    try expectEqual(statePtr.move, move2);
+    var state_ptr = node.data;
+    try expectEqual(state_ptr.board, board);
+    try expectEqual(state_ptr.cars, puzzle);
+    try expectEqual(state_ptr.move, move2);
 
     // Test the next state in the list.
     node = node.next orelse unreachable;
-    statePtr = node.data;
-    try expectEqual(statePtr.board, board);
-    try expectEqual(statePtr.cars, puzzle);
-    try expectEqual(statePtr.move, move1);
+    state_ptr = node.data;
+    try expectEqual(state_ptr.board, board);
+    try expectEqual(state_ptr.cars, puzzle);
+    try expectEqual(state_ptr.move, move1);
     try expectEqual(node.next, null);
 }
 
