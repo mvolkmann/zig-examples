@@ -7,5 +7,5 @@ pub fn second() void {
 }
 
 test "second" {
-    try expectEqual(2, 2);
+    try expectEqual(2, 3);
 }
