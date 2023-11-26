@@ -18,7 +18,6 @@ pub fn main() void {
         print("Dog struct has field \"{s}\" with type {s}\n", .{ field.name, @typeName(T) });
 
         const value = @field(d, field.name);
-        // comptime is required here because the compiler needs to know the type.
         print("value is {any}\n", .{value});
     }
 
