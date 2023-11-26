@@ -22,12 +22,8 @@ const Wrong = struct {
 // The first argument must be a struct with
 // a top_speed field that is an integer.
 fn travelTime(thing: anytype, distance: u32) !f32 {
-    // We could use @TypeOf(thing) and functions like
-    // std.meta.trait.hasField and std.meta.trait.isIntegral
-    // to verify that "thing" meets our criteria.
-    // However, there is no need to do that because the compiler will
-    // verify that "thing" has a "top_speed" field that is an integer
-    // just because it is used that way here.
+    // The compiler will verify that "thing" has a "top_speed" field
+    // that is an integer because it is used that way here.
     const s: f32 = @floatFromInt(thing.top_speed);
 
     // We can't eliminate the local variable d because

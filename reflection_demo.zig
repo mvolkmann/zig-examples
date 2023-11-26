@@ -1,6 +1,5 @@
 const std = @import("std");
 const print = std.debug.print;
-const trait = std.meta.trait;
 
 const Dog = struct { name: []const u8, breed: []const u8, age: u8 };
 
@@ -20,15 +19,7 @@ pub fn main() void {
 
         const value = @field(d, field.name);
         // comptime is required here because the compiler needs to know the type.
-        if (comptime trait.isNumber(T)) print("value is {d}\n", .{value});
-        if (comptime trait.isZigString(T)) print("value is {s}\n", .{value});
-        // trait methods include isConstPtr, isContainer, isExtern,
-        // isFloat, isIndexable, isIntegral, isManyItemPtr, isNumber,
-        // isPacked, isPtrTo, isSignedInt, isSingleItemPtr, isSlice,
-        // isSliceOf, isTuple, isUnsignedInt, and isZigString.
-
-        // To test if a struct has a field with a given name, trait.hasField(name)
-        // To test if a struct has a function with a given name, trait.hasFn(name)
+        print("value is {any}\n", .{value});
     }
 
     // Function reflection

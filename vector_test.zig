@@ -53,6 +53,19 @@ test "vectors" {
     try expectEqual(@reduce(.Max, v1), 3.4);
 }
 
+test "basic" {
+    const MyVectorType = @Vector(5, f32); // defines a type
+    const vector = MyVectorType{ 1.2, 2.3, 3.4, 4.5, 5.6 }; // creates an instance
+    try expectEqual(vector[2], 3.4);
+    try expectEqual(@reduce(.Min, vector), 1.2); // finds smallest element
+    try expectEqual(@reduce(.Max, vector), 5.6); // finds largest element
+    try expectEqual(@reduce(.Add, vector), 17); // adds all elements
+
+    const vector2 = MyVectorType{ 1, 2, 3, 4, 5 }; // creates another instance
+    const vector3 = vector + vector2; // creates instance by adding two of them
+    try expectEqual(vector3[4], 10.6);
+}
+
 test "has SIMD" {
     // Typically code logic doesn't depend on CPU-specific features.
     // @Vector is CPU independent outside of the

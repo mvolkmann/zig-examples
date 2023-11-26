@@ -1,6 +1,5 @@
 const std = @import("std");
 const print = std.debug.print;
-const trait = std.meta.trait;
 const expectEqual = std.testing.expectEqual;
 
 const Circle = struct {
@@ -26,16 +25,6 @@ const Square = struct {
 };
 
 fn anyArea(shape: anytype) f32 {
-    // This comptime block isn't necessary, but it provides documentation
-    // about the expectations on the shape type.
-    comptime {
-        if (!trait.isPtrTo(.Struct)(@TypeOf(shape))) {
-            @compileError("shape must be a pointer to a struct");
-        }
-        if (!trait.hasFn("area")(@TypeOf(shape.*))) {
-            @compileError("shape must have an area method");
-        }
-    }
     return shape.area();
 }
 

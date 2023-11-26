@@ -36,6 +36,8 @@ test "enum" {
     print("c = {}\n", .{c}); // enum_demo.main.Color.green
 
     try expectEqual(@intFromEnum(c), 8);
+    const color: Color = @enumFromInt(8);
+    try expectEqual(color, Color.green);
     try expect(!c.isPrimary());
     try expect(!Color.isPrimary(c));
     try expect(Color.yellow.isPrimary());
