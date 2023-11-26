@@ -2,6 +2,7 @@ const std = @import("std");
 const print = std.debug.print;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "vectors" {
     // The benefit of using vectors is most apparent when
@@ -9,6 +10,7 @@ test "vectors" {
 
     // The length of a new vector cannot be inferred using _.
     const MyVec = @Vector(3, f32);
+    try expectEqualStrings("@Vector(3, f32)", @typeName(MyVec));
     const v1 = MyVec{ 1.2, 2.3, 3.4 };
 
     // Elements can be accessed just like with arrays and slices.
