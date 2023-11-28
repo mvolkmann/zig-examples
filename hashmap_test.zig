@@ -33,7 +33,7 @@ test "AutoArrayHashMap" {
     var name = map.get(99) orelse "";
     try expectEqualStrings("Gretzky", name);
 
-    const removed = map.orderedRemove(99);
+    const removed = map.orderedRemove(99); // returns bool
     try expect(removed);
     try expectEqual(@as(?String, null), map.get(99));
 }
@@ -69,7 +69,7 @@ test "AutoHashMap" {
     var name = map.get(99) orelse "";
     try expectEqualStrings("Gretzky", name);
 
-    const removed = map.remove(99);
+    const removed = map.remove(99); // returns bool
     try expect(removed);
     try expectEqual(@as(?String, null), map.get(99));
 }
@@ -158,7 +158,7 @@ test "StringHashMap" {
     // The `get` method returns an optional value.
     try expectEqual(@as(?u8, 99), map.get("Gretzky"));
 
-    const removed = map.remove("Gretzky");
+    const removed = map.remove("Gretzky"); // returns bool
     try expect(removed);
     try expectEqual(@as(?u8, null), map.get("Gretzky"));
 }
