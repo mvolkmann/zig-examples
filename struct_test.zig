@@ -29,18 +29,20 @@ const Point = struct {
     x: f32 = 1, // default value
     y: f32 = 2, // default value
 
+    const Self = @This(); // reference to containing struct
+
     // Defining an init function is optional.
-    pub fn init(x: f32, y: f32) @This() {
-        return Point{ .x = x, .y = y };
+    pub fn init(x: f32, y: f32) Self {
+        return Self{ .x = x, .y = y };
     }
 
     // This is a method because it is "pub" and
     // takes an instance of the struct as its first argument.
-    pub fn distanceToOrigin(self: Point) f32 {
+    pub fn distanceToOrigin(self: Self) f32 {
         return sqrt(square(self.x) + square(self.y));
     }
 
-    pub fn distanceTo(self: Point, other: Point) f32 {
+    pub fn distanceTo(self: Self, other: Self) f32 {
         const dx = self.x - other.x;
         const dy = self.y - other.y;
         return sqrt(square(dx) + square(dy));

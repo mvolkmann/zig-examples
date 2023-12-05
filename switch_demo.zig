@@ -4,7 +4,8 @@ const String = []const u8;
 
 // The value of the first argument to print must be known at compile time.
 fn log(comptime text: String) void {
-    print(text ++ "\n", .{});
+    // print(text ++ "\n", .{});
+    print("{s}\n", .{text});
 }
 
 pub fn main() !void {
@@ -38,6 +39,7 @@ pub fn main() !void {
 
     // This demonstrates using a switch as an expression.
     const result = switch (value) {
+        0 => "none",
         1 => "single",
         2 => "couple",
         3 => "few",
@@ -61,7 +63,7 @@ pub fn main() !void {
             "You have {} items and can use the express lane.\n",
             .{count},
         ),
-        3...9 => print("overlapping\n", .{}),
+        // 3...9 => print("overlapping\n", .{}), // not allowed
         else => |count| print(
             "You have {} items and cannot use the express lane.\n",
             .{count},

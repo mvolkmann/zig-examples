@@ -83,25 +83,25 @@ const Dog = struct {
 };
 
 fn treeOfDogs() void {
-    const Node = makeNode(Dog);
-    var node1 = Node.init(Dog{
+    const DogNode = makeNode(Dog);
+    var node1 = DogNode.init(Dog{
         .name = "Maisey",
         .breed = "Treeing Walker Coonhound",
         .age = 3,
     });
-    var node2 = Node.init(Dog{
+    var node2 = DogNode.init(Dog{
         .name = "Ramsay",
         .breed = "Native American Indian Dog",
         .age = 3,
     });
     node1.left = &node2;
-    var node3 = Node.init(Dog{
+    var node3 = DogNode.init(Dog{
         .name = "Oscar",
         .breed = "German Short-haired Pointer",
         .age = 3,
     });
     node1.right = &node3;
-    var node4 = Node.init(Dog{
+    var node4 = DogNode.init(Dog{
         .name = "Comet",
         .breed = "Whippet",
         .age = 3,
