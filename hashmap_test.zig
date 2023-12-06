@@ -56,8 +56,8 @@ test "AutoHashMap" {
 
     // Iterate over the map keys.
     var iter2 = map.keyIterator();
-    while (iter2.next()) |key| {
-        const number = key.*;
+    while (iter2.next()) |key_ptr| {
+        const number = key_ptr.*;
         if (map.get(number)) |name| {
             print("{s} number is {d}.\n", .{ name, number });
         }

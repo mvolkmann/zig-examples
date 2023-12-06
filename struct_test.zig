@@ -55,15 +55,13 @@ const Point = struct {
     pub fn identify(prefix: []const u8) void {
         std.debug.print("{s} Point.\n", .{prefix});
     }
-};
 
-// Typically this would be a method on the Point struct,
-// but we want to demonstrate passing a pointer to a struct
-// to enable modifying fields.
-fn translate(pt: *Point, dx: f32, dy: f32) void {
-    pt.x += dx;
-    pt.y += dy;
-}
+    // Taking pointer to struct enables modification.
+    pub fn translate(pt: *Self, dx: f32, dy: f32) void {
+        pt.x += dx;
+        pt.y += dy;
+    }
+};
 
 test "Point struct" {
     try expectEqual(Point.dimensions, 2); // constant value
@@ -96,7 +94,7 @@ test "Point struct" {
     }
 
     // Passing a pointer so the struct instance can be modified.
-    translate(&p1, 2, 3);
+    p1.translate(2, 3);
     try expectEqual(p1.x, 3);
     try expectEqual(p1.y, 5);
 }
