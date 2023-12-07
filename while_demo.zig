@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const String = []const u8;
 
 var counter: u8 = 0;
 fn nextCounter() ?u8 {
