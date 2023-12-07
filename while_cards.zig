@@ -30,29 +30,30 @@ const Card = struct {
     rank: Rank,
 };
 
-var card_count: u8 = 0;
-var deck: [52]Card = undefined;
+const deck_size: u8 = 52;
+var deck: [deck_size]Card = undefined;
 var next_card_index: u8 = 0;
 
 fn fillDeck() !void {
+    var card_index: u8 = 0;
     for (1..14) |rank_number| {
         const rank: Rank = @enumFromInt(rank_number);
         for (0..4) |suit_number| {
             const suit: Suit = @enumFromInt(suit_number);
-            deck[card_count] = Card{ .rank = rank, .suit = suit };
-            card_count += 1;
+            deck[card_index] = Card{ .rank = rank, .suit = suit };
+            card_index += 1;
         }
     }
 
+    // Shuffle the deck.
     var seed: u64 = undefined;
     try std.os.getrandom(std.mem.asBytes(&seed)); // can't call at comptime
     var prng = std.rand.DefaultPrng.init(seed);
-    const random = prng.random();
-    random.shuffle(Card, &deck);
+    prng.random().shuffle(Card, &deck);
 }
 
 fn deal() ?Card {
-    if (next_card_index >= card_count) return null;
+    if (next_card_index >= deck_size) return null;
     const card = deck[next_card_index];
     next_card_index += 1;
     return card;
@@ -61,7 +62,7 @@ fn deal() ?Card {
 fn play() String {
     var score: u8 = 0;
     return while (deal()) |card| {
-        print("{s} of {s}\n", .{ @tagName(card.rank), @tagName(card.suit) });
+        printCard(card);
         const value = @intFromEnum(card.rank);
         score += if (value == 1 and score + 11 <= 21) 11 else if (value >= 10) 10 else value;
         if (score == 21) break "blackjack";
@@ -70,12 +71,23 @@ fn play() String {
     } else "out of cards";
 }
 
+fn printCard(card: Card) void {
+    const suits = [_]String{ "♠", "♥", "♣", "♦" };
+    const suit_string = suits[@intFromEnum(card.suit)];
+    const rank_value = @intFromEnum(card.rank);
+    if (rank_value >= 2 and rank_value <= 10) {
+        print("{d}", .{rank_value});
+    } else {
+        print("{c}", .{@tagName(card.rank)[0]});
+    }
+    print("{s} ", .{suit_string});
+}
+
 pub fn main() !void {
     try fillDeck();
-
     while (true) {
         const decision = play();
-        print("{s}\n\n", .{decision});
+        print("{s}\n", .{decision});
         if (std.mem.eql(u8, decision, "out of cards")) break;
     }
 }
