@@ -21,7 +21,7 @@ const Wrong = struct {
 
 // The first argument must be a struct with
 // a top_speed field that is an integer.
-fn travelTime(thing: anytype, distance: u32) !f32 {
+fn travelHours(thing: anytype, distance: u32) f32 {
     // The compiler will verify that "thing" has a "top_speed" field
     // that is an integer because it is used that way here.
     const s: f32 = @floatFromInt(thing.top_speed);
@@ -41,7 +41,7 @@ test "anytype" {
     const distance = 20; // miles
     const tolerance = 0.001;
     try expectApproxEqAbs(
-        try travelTime(cheetah, distance),
+        travelHours(cheetah, distance),
         0.2667,
         tolerance,
     );
@@ -53,7 +53,7 @@ test "anytype" {
         .top_speed = 201,
     };
     try expectApproxEqAbs(
-        try travelTime(ferrari, distance),
+        travelHours(ferrari, distance),
         0.0995,
         tolerance,
     );
@@ -61,9 +61,9 @@ test "anytype" {
     // This results in a compile error which is good because
     // the first argument is struct whose top_speed field is not an integer.
     // const wrong = Wrong{ .top_speed = 1.0 };
-    // _ = try travelTime(wrong, distance);
+    // _ = travelHours(wrong, distance);
 
     // This results in a compile error which is good because
     // the first argument is not a struct with a "top_speed" field.
-    // _ = try travelTime("wrong", distance);
+    // _ = travelHours("wrong", distance);
 }

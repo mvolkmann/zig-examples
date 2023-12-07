@@ -33,6 +33,7 @@ const Card = struct {
 const deck_size: u8 = 52;
 var deck: [deck_size]Card = undefined;
 var next_card_index: u8 = 0;
+const suits = [_]String{ "♠", "♥", "♣", "♦" };
 
 fn fillDeck() !void {
     var card_index: u8 = 0;
@@ -72,7 +73,6 @@ fn play() String {
 }
 
 fn printCard(card: Card) void {
-    const suits = [_]String{ "♠", "♥", "♣", "♦" };
     const suit_string = suits[@intFromEnum(card.suit)];
     const rank_value = @intFromEnum(card.rank);
     if (rank_value >= 2 and rank_value <= 10) {
